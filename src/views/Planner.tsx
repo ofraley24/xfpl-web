@@ -12,6 +12,7 @@ export default function Planner() {
   const [maxPrice, setMaxPrice] = useStored<number>("pl:maxprice", 16);
   const [starters, setStarters] = useStored<boolean>("pl:starters", true);
   const [fit, setFit] = useStored<boolean>("pl:fit", false);
+  const [maxOwn, setMaxOwn] = useStored<number>("pl:maxown", 100);
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<{ k: SortKey; desc: boolean }>({ k: "xp", desc: true });
   const [limit, setLimit] = useState(60);
@@ -20,7 +21,7 @@ export default function Planner() {
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase();
     return d.players
-      .filter((p) => (pos === "ALL" || p.pos === pos) && (!team || p.team === team) && p.price <= maxPrice + 1e-9)
+      .filter((p) => (pos === "ALL" || p.pos === pos) && (!team || p.team === team) && p.price <= maxPrice + 1e-9 && p.own <= maxOwn)
       .filter((p) => !s || p.name.toLowerCase().includes(s) || p.full_name.toLowerCase().includes(s))
       .filter((p) => !starters || p.fixtures.some((f) => f.gw >= from && f.gw <= to && f.xi))
       .filter((p) => !fit || p.status === "a" || (p.status === "d" && (p.chance_next ?? 0) >= 75))
@@ -32,7 +33,7 @@ export default function Planner() {
         fx.forEach((f) => byGw.set(f.gw, (byGw.get(f.gw) ?? 0) + f.xp));
         return { p, xp, value: xp / p.price, haul, n: fx.length, perfx: fx.length ? xp / fx.length : 0, byGw };
       });
-  }, [d, pos, team, maxPrice, q, starters, fit, from, to, excluded]);
+  }, [d, pos, team, maxPrice, maxOwn, q, starters, fit, from, to, excluded]);
 
   const sorted = useMemo(() => {
     const key = (r: (typeof rows)[number]) => {
@@ -75,6 +76,10 @@ export default function Planner() {
           <label className="row" style={{ gap: 6 }}>
             <span className="muted">max £{fmt(maxPrice)}m</span>
             <input type="range" min={4} max={16} step={0.1} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} />
+          </label>
+          <label className="row" style={{ gap: 6 }} title="Differentials: hide players owned by more than this share of managers">
+            <span className="muted">owned ≤ {maxOwn >= 100 ? "any" : `${maxOwn}%`}</span>
+            <input type="range" min={1} max={100} step={1} value={maxOwn} onChange={(e) => setMaxOwn(Number(e.target.value))} />
           </label>
           <label className="row" style={{ gap: 4 }} title="Players in the probable XI (a heuristic from recent starts and FPL availability) for at least one fixture in the range">
             <input type="checkbox" checked={starters} onChange={(e) => setStarters(e.target.checked)} /> probable starters

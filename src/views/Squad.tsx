@@ -92,6 +92,7 @@ export default function Squad() {
         </div>
       </div>
 
+      {full && <ChipPlanner lineups={lineups} />}
       {full && <TransferFinder squad={squad} />}
     </div>
   );
@@ -183,3 +184,42 @@ function TransferFinder({ squad }: { squad: Player[] }) {
 }
 
 const signed = (x: number) => `${x > 0.05 ? "+" : x < -0.05 ? "−" : "±"}${fmt(Math.abs(x))}`;
+
+function ChipPlanner({ lineups }: { lineups: GwLineup[] }) {
+  const { excluded } = useApp();
+  const xpOf = (p: Player, gw: number) => p.fixtures.filter((f) => f.gw === gw && !excluded.has(`${p.id}:${f.fixture}`)).reduce((s, f) => s + f.xp, 0);
+  const rows = lineups.map((l) => ({
+    gw: l.gw,
+    bb: l.bench.reduce((s, p) => s + xpOf(p, l.gw), 0),
+    tc: l.captain ? xpOf(l.captain, l.gw) : 0,
+    cap: l.captain,
+  }));
+  const bestBB = rows.reduce((a, b) => (b.bb > a.bb ? b : a), rows[0]);
+  const bestTC = rows.reduce((a, b) => (b.tc > a.tc ? b : a), rows[0]);
+  return (
+    <div className="panel">
+      <h3>Chip planner</h3>
+      <p className="sub">What each chip adds with this squad: Bench Boost scores your four substitutes, Triple Captain adds your captain's score once more.
+        Doubles show up as big numbers.</p>
+      <div className="kpis" style={{ marginBottom: 10 }}>
+        <div className="kpi"><div className="v num">GW{bestBB.gw}</div><div className="l">best Bench Boost: +{fmt(bestBB.bb)} expected</div></div>
+        <div className="kpi"><div className="v num">GW{bestTC.gw}</div><div className="l">best Triple Captain: +{fmt(bestTC.tc)} ({bestTC.cap?.name})</div></div>
+      </div>
+      <div className="tablewrap">
+        <table className="t">
+          <thead><tr><th>GW</th><th className="r">Bench Boost</th><th className="r">Triple Captain</th><th>Captain</th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.gw}>
+                <td><b>GW{r.gw}</b></td>
+                <td className="r num" style={{ color: r === bestBB ? "var(--accent)" : undefined }}>+{fmt(r.bb)}</td>
+                <td className="r num" style={{ color: r === bestTC ? "var(--accent)" : undefined }}>+{fmt(r.tc)}</td>
+                <td>{r.cap?.name ?? "–"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

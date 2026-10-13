@@ -23,9 +23,9 @@ are data, not code: `public/data/*.json` is gitignored.
 
 | tab | what it does |
 | --- | --- |
-| Planner | every player's xP summed over any gameweek range, xP per £m, chance of a 10+ haul; colour-coded fixture cells you can click to switch off; filters for position, team, price, probable starters, fitness |
+| Planner | every player's xP summed over any gameweek range, xP per £m, chance of a 10+ haul; colour-coded fixture cells you can click to switch off; filters for position, team, price, ownership (differentials), probable starters, fitness |
 | Fixtures | fixture ticker by team: expected goals for, clean-sheet chance, or expected goal difference over the range |
-| My squad | build your 15 (or load the dream team); best XI and captain picked each gameweek on a pitch view; transfer finder ranking every legal single swap by what it adds to your squad |
+| My squad | build your 15 (or load the dream team); best XI and captain picked each gameweek on a pitch view; chip planner (best Bench Boost and Triple Captain gameweeks); transfer finder ranking every legal single swap by what it adds to your squad |
 | Dream team | the optimal 15 under FPL's rules (2/5/5/3, ≤ 3 per club, budget) for the range, solved as an integer program in the browser; lock / ban players |
 | Captaincy | armband ranking per gameweek with haul (10+, 15+) and blank chances from each player's full points distribution; captain duel: P(A outscores B) |
 | Haul map | scatter of every probable starter: price vs xP / xP per £m / haul chance; bubble size = ownership |
