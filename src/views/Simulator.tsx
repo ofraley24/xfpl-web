@@ -32,7 +32,7 @@ export default function Simulator() {
     <div className="grid">
       <div className="panel">
         <h2>Gameweek simulator</h2>
-        <p className="sub">Your best XI and captain, played out by the model. Each spin draws every starter's score from his simulated points
+        <p className="sub">Your best XI and captain, played out by the model. Each spin draws every starter's score from their simulated points
           distribution. Just for fun: team-mates are drawn independently and everyone is assumed to start.</p>
         <div className="seg">{d.gws.map((g) => <button key={g} className={gw === g ? "on" : ""} onClick={() => setGw(g)}>GW{g}</button>)}</div>
       </div>

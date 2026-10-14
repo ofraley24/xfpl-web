@@ -9,6 +9,7 @@ import Captaincy from "./views/Captaincy";
 import Scatter from "./views/Scatter";
 import Simulator from "./views/Simulator";
 import Compare from "./views/Compare";
+import Stats from "./views/Stats";
 import About from "./views/About";
 import PlayerDrawer from "./views/PlayerDrawer";
 
@@ -21,6 +22,7 @@ const TABS = [
   ["scatter", "Haul map"],
   ["sim", "Simulator"],
   ["compare", "Compare"],
+  ["stats", "Stats"],
   ["about", "About"],
 ] as const;
 type Tab = (typeof TABS)[number][0];
@@ -111,6 +113,7 @@ function Loaded({ d }: { d: Derived }) {
         {tab === "scatter" && <Scatter />}
         {tab === "sim" && <Simulator />}
         {tab === "compare" && <Compare />}
+        {tab === "stats" && <Stats />}
         {tab === "about" && <About />}
       </main>
       {open !== null && d.byId.has(open) && <PlayerDrawer id={open} onClose={() => setOpen(null)} />}

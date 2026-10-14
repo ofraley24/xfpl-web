@@ -21,3 +21,10 @@ if (!files.length) {
 const latest = files[files.length - 1];
 copyFileSync(join(src, latest), join(dst, "forecast.json"));
 console.log(`sync-data: ${latest} -> public/data/forecast.json`);
+
+// stats sheet: newest stats_<season>.json -> public/data/stats.json
+const stats = readdirSync(src).filter((f) => /^stats_.*\.json$/.test(f)).sort();
+if (stats.length) {
+  copyFileSync(join(src, stats[stats.length - 1]), join(dst, "stats.json"));
+  console.log(`sync-data: ${stats[stats.length - 1]} -> public/data/stats.json`);
+}

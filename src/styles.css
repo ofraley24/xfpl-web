@@ -87,7 +87,7 @@ h3 { margin: 0 0 8px; font-size: 15px; }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .btn.small { padding: 3px 8px; font-size: 12px; }
 .btn:disabled { opacity: 0.5; cursor: default; }
-input[type="text"], input[type="number"], select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+input[type="text"], input[type="number"], select { max-width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
 input[type="range"] { accent-color: var(--accent); }
 .seg { display: inline-flex; flex-wrap: wrap; max-width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
 .seg button { border: 0; background: transparent; padding: 4px 10px; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 600; }

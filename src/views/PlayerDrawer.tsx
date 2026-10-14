@@ -83,7 +83,7 @@ export default function PlayerDrawer({ id, onClose }: { id: number; onClose: () 
             );
           })}
         </div>
-        <p className="faint" style={{ marginTop: 12 }}>All figures assume he starts. Distributions come from 1,000 simulated matches per fixture.</p>
+        <p className="faint" style={{ marginTop: 12 }}>All figures assume the player starts. Distributions come from 1,000 simulated matches per fixture.</p>
       </aside>
     </>
   );

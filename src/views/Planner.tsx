@@ -119,7 +119,7 @@ export default function Planner() {
                 <td className="r num"><b>{fmt(xp)}</b></td>
                 <td className="r num">{fmt(value, 2)}</td>
                 <td className="r num muted">{fmt(perfx, 2)}</td>
-                <td className="r num" title="Chance of at least one 10+ point score in the range (if he starts every fixture)">{pct(haul)}</td>
+                <td className="r num" title="Chance of at least one 10+ point score in the range (if they start every fixture)">{pct(haul)}</td>
                 {gws.map((g) => <GwCell key={g} p={p} gw={g} excluded={excluded} toggle={toggleFixture} />)}
               </tr>
             ))}

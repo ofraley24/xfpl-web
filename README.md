@@ -29,11 +29,12 @@ are data, not code: `public/data/*.json` is gitignored.
 | Dream team | the optimal 15 under FPL's rules (2/5/5/3, ≤ 3 per club, budget) for the range, solved as an integer program in the browser; lock / ban players |
 | Captaincy | armband ranking per gameweek with haul (10+, 15+) and blank chances from each player's full points distribution; captain duel: P(A outscores B) |
 | Haul map | scatter of every probable starter: price vs xP / xP per £m / haul chance; bubble size = ownership |
-| Simulator | play your gameweek out: each starter's score drawn from his simulated distribution, exact distribution of your team total, chance to reach a target, range outlook |
+| Simulator | play your gameweek out: each starter's score drawn from their simulated distribution, exact distribution of your team total, chance to reach a target, range outlook |
 | Compare | up to four players side by side, per-gameweek chart |
+| Stats | the season so far (or the last 4 gameweeks): player table with stat groups (shooting, creating, defending, goalkeeping, FPL), per-90 toggle and percentile shading; team table with xG / xGA / xPts / pressing and the model's attack and defence ratings with trend lines; an explorer plotting any stat against any other; player cards with shot maps and percentile bars against the same position. Reads `public/data/stats.json` (`xFPL/analysis/27_export_stats.py`) |
 | About | what the numbers mean, the horizon backtest, this forecast's provenance and quality gates |
 
-Clicking a player opens a card with his points broken down by source (goals, assists, clean sheets, bonus, ...) and a
+Clicking a player opens a card with their points broken down by source (goals, assists, clean sheets, bonus, ...) and a
 distribution chart for every fixture.
 
 ## Data contract (`forecast.json`, schema 2)
