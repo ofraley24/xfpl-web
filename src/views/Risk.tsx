@@ -1,3 +1,4 @@
+import { Tooltip } from "../Tooltip";
 import { useMemo, useState } from "react";
 import { fixtureKey, fmt, pct, POSITIONS, useApp, useStored } from "../data";
 import { atLeast, mean, quantile, sumAll } from "../prob";
@@ -211,12 +212,12 @@ function Frontier({ rows, mode, target, span, haulLine }: { rows: Row[]; mode: M
         <span><i style={{ background: "var(--text)", opacity: 0.7 }} />typical {quality} for the xP</span>
         <span style={{ color: "var(--accent)", fontWeight: 650 }}>green names: most {quality} above typical</span></div>
       {tip && (
-        <div className="tooltip" style={{ left: tip.x + 14, top: tip.y + 14 }}>
+        <Tooltip x={tip.x} y={tip.y}>
           <b>{tip.r.p.name}</b> · £{fmt(tip.r.p.price)}m · {fmt(tip.r.p.own)}% owned<br />
           xP {fmt(tip.r.xp, 2)} · {upLabel} <b>{pct(up(tip.r))}</b>{resid(tip.r) === null ? " (too few comparable players)" : ` (${resid(tip.r)! >= 0 ? "+" : "−"}${(100 * Math.abs(resid(tip.r)!)).toFixed(1)} pts vs typical)`}<br />
           bad week (20th pct) {tip.r.floor} · good week (90th pct) {tip.r.ceil} · blank risk {pct(tip.r.blank)}
           <PmfBars pmf={tip.r.pm} width={220} height={40} maxPts={Math.max(20, 12 * span)} />
-        </div>
+        </Tooltip>
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+import { Tooltip } from "../Tooltip";
 import { useMemo, useState } from "react";
 import { fixturesIn, fmt, pct, POSITIONS, useApp, useStored } from "../data";
 import type { Player, Pos } from "../types";
@@ -81,10 +82,10 @@ export default function Scatter() {
           <span>size = ownership · opacity = haul chance</span></div>
       </div>
       {hover && (
-        <div className="tooltip" style={{ left: hover.x + 12, top: hover.y + 12 }}>
+        <Tooltip x={hover.x} y={hover.y}>
           <b>{hover.p.name}</b> {d.teams.get(hover.p.team)?.short} · £{fmt(hover.p.price)}m · {fmt(hover.p.own)}% owned<br />
           {label}: <b>{y === "haul" ? pct(hover.v) : fmt(hover.v, 2)}</b> · haul chance {pct(hover.h)}
-        </div>
+        </Tooltip>
       )}
     </div>
   );

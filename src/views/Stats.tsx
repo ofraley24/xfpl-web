@@ -1,3 +1,4 @@
+import { Tooltip } from "../Tooltip";
 import { useEffect, useMemo, useState } from "react";
 import { POSITIONS, useApp, useStored } from "../data";
 import {
@@ -264,7 +265,7 @@ function Explorer({ doc, w, open }: { doc: StatsDoc; w: Window; open: (id: numbe
         </svg>
         {mode === "players" && <div className="legend">{show.map((p) => <span key={p}><span style={{ color: `var(--pos-${p})` }}>{POS_SHAPE[p]}</span> {p}</span>)}<span>size = minutes played</span></div>}
       </div>
-      {hover && <div className="tooltip" style={{ left: hover.cx + 12, top: hover.cy + 12 }}><b>{hover.label}</b><br />{xl}: {tick(hover.x)} · {yl}: {tick(hover.y)}</div>}
+      {hover && <Tooltip x={hover.cx} y={hover.cy}><b>{hover.label}</b><br />{xl}: {tick(hover.x)} · {yl}: {tick(hover.y)}</Tooltip>}
     </>
   );
 }

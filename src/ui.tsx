@@ -1,3 +1,4 @@
+import { Tooltip } from "./Tooltip";
 import { useMemo, useState } from "react";
 import { fmt, useApp } from "./data";
 import type { Player, Pos } from "./types";
@@ -146,10 +147,10 @@ export function PmfBars({ pmf, width = 220, height = 60, maxPts = 20 }: { pmf: {
         {ticks.map((x) => <text key={x} x={(x - lo) * w + w / 2} y={height + 12} textAnchor="middle">{x}</text>)}
       </svg>
       {hover && (
-        <div className="tooltip" style={{ left: hover.cx + 14, top: hover.cy + 14 }}>
+        <Tooltip x={hover.cx} y={hover.cy}>
           <b>{lo + hover.i}{hover.i === last ? "+" : ""} pts</b>: {pc(vals[hover.i])}
           {hover.i > 0 && hover.i < last && <><br /><span className="muted">{lo + hover.i} or more: {pc(atLeast[hover.i])}</span></>}
-        </div>
+        </Tooltip>
       )}
     </span>
   );

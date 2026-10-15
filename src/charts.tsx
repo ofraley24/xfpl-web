@@ -1,3 +1,4 @@
+import { Tooltip } from "./Tooltip";
 // Figures for the method pages. Thin marks, recessive axes, direct labels, a hover layer on every mark.
 import { useState, type ReactNode } from "react";
 import type { EvidenceSet, Ratio } from "./evidence";
@@ -7,7 +8,7 @@ function useTip() {
   const [tip, setTip] = useState<Tip>(null);
   const on = (body: ReactNode) => (e: React.MouseEvent) => setTip({ x: e.clientX, y: e.clientY, body });
   const off = () => setTip(null);
-  const node = tip && <div className="tooltip" style={{ left: tip.x + 14, top: tip.y + 14 }}>{tip.body}</div>;
+  const node = tip && <Tooltip x={tip.x} y={tip.y}>{tip.body}</Tooltip>;
   return { on, off, node };
 }
 const f = (x: number | null | undefined, d = 2) => (x == null ? "–" : x.toFixed(d));

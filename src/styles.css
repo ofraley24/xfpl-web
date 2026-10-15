@@ -178,7 +178,7 @@ table.plain tr.ours td { font-weight: 650; }
 /* ---- charts & figures */
 svg text { fill: var(--muted); font-size: 11px; font-family: var(--sans); }
 .dot { cursor: pointer; }
-.tooltip { position: fixed; pointer-events: none; z-index: 60; background: var(--panel); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px; box-shadow: var(--shadow); font-size: 12px; max-width: 280px; }
+.tooltip { position: fixed; pointer-events: none; z-index: 60; width: max-content; background: var(--panel); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px; box-shadow: var(--shadow); font-size: 12px; max-width: 280px; }
 figure.fig { margin: 22px 0; }
 figure.fig figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.45; }
 figure.fig figcaption b { color: var(--text); font-weight: 650; }
