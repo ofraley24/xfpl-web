@@ -1,5 +1,6 @@
 // Points distributions: each player-fixture carries its simulated probability mass function (pmf).
-import type { Pmf } from "./types";
+import { fixtureKey } from "./data";
+import type { Player, Pmf } from "./types";
 
 export const mean = (d: Pmf) => d.p.reduce((s, p, i) => s + p * (d.lo + i), 0);
 
@@ -66,4 +67,11 @@ export function sample(d: Pmf, u = Math.random()) {
     if (u <= c) return d.lo + i;
   }
   return d.lo + d.p.length - 1;
+}
+
+/** A player's points distribution for one gameweek (doubles convolved), or null if no fixture / no distribution. */
+export function gwPmf(p: Player, gw: number, excluded: Set<string>): Pmf | null {
+  const fx = p.fixtures.filter((f) => f.gw === gw && !excluded.has(fixtureKey(p.id, f.fixture)));
+  if (!fx.length || fx.some((f) => !f.pmf)) return null;
+  return sumAll(fx.map((f) => f.pmf!));
 }

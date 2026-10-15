@@ -31,7 +31,6 @@ starts**; it is labelled quietly in the metric names and explained in the paper.
 | Player analysis | xP over any gameweek range, xP per £m, haul chance; fixture cells you can switch off; filters incl. ownership and probable starters |
 | Risk & upside | built on the full points distributions: strategy modes (protect a lead / expected points / chase a target), upside against xP with the typical upside for each xP (leave-one-out local regression; no comparison where too few similar players), bad-week (20th pct) and good-week (90th pct) outcomes, blank risk, upside swaps, chase captains. Multi-gameweek totals assume independent fixtures |
 | Fixtures | fixture ticker: expected goals for, clean-sheet chance or expected goal difference |
-| Captaincy | armband ranking with haul / blank chances from full points distributions; captain duel |
 | My squad | best XI and captain each gameweek, chip planner, transfer finder by squad effect |
 | Dream team | the optimal 15 under FPL's rules, solved as an integer program in the browser |
 | Simulator | play a gameweek out from the simulated distributions; team-total distribution |

@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fmt, pct, useApp, useStored } from "../data";
-import { atLeast, convolve, mean, quantile, sample, scale, sumAll } from "../prob";
+import { atLeast, convolve, gwPmf, mean, quantile, sample, scale, sumAll } from "../prob";
 import { bestLineup } from "../squad";
 import type { Player, Pmf } from "../types";
-import { gwPmf } from "./Captaincy";
 
 export default function Simulator() {
   const { d, excluded, squad: ids, from, to } = useApp();
