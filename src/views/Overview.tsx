@@ -2,8 +2,9 @@ import { useMemo } from "react";
 import { go } from "../App";
 import { fixtureKey, fmt, POSITIONS, rangeXp, useApp } from "../data";
 import { useEvidence } from "../evidence";
-import type { Player } from "../types";
-import { PlayerName, PosChip, StatusChip, TeamShort } from "../ui";
+import { atLeast } from "../prob";
+import type { Player, Pmf } from "../types";
+import { PlayerName, PmfBars, PosChip, StatusChip, TeamShort } from "../ui";
 
 const PILLARS = [
   { title: "Team strength that moves", anchor: "team-strength",
@@ -50,6 +51,30 @@ export default function Overview() {
           fixture, on more than a decade of shot-level data.</p>
       </header>
 
+      <section>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
+          <h2>Gameweek {gw}: the model's picks</h2>
+          <span className="metric-note">xP · if starts · probable starters, fit or ≥75%</span>
+        </div>
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", marginTop: 10 }}>
+          {byPos.map(({ pos, top }) => (
+            <div key={pos} className="panel">
+              <div className="row" style={{ justifyContent: "space-between", marginBottom: 6 }}><PosChip pos={pos} /><span className="metric-note">xP</span></div>
+              <table className="plain"><tbody>
+                {top.map((p) => (
+                  <tr key={p.id}>
+                    <td><PlayerName p={p} /> <StatusChip p={p} /><div className="faint" style={{ fontSize: 11.5 }}><TeamShort id={p.team} /> · {opp(p)}</div></td>
+                    <td className="r serif" style={{ fontSize: 18, fontWeight: 600 }}>{fmt(gwXp(p))}</td>
+                  </tr>
+                ))}
+              </tbody></table>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <SameXp starters={starters} gw={gw} />
+
       <section aria-label="How it's built">
         <div className="three" style={{ gap: 22 }}>
           {PILLARS.map((p, i) => (
@@ -83,28 +108,6 @@ export default function Overview() {
         </section>
       )}
 
-      <section>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-          <h2>Gameweek {gw}: the model's picks</h2>
-          <span className="metric-note">xP · if starts · probable starters, fit or ≥75%</span>
-        </div>
-        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", marginTop: 10 }}>
-          {byPos.map(({ pos, top }) => (
-            <div key={pos} className="panel">
-              <div className="row" style={{ justifyContent: "space-between", marginBottom: 6 }}><PosChip pos={pos} /><span className="metric-note">xP</span></div>
-              <table className="plain"><tbody>
-                {top.map((p) => (
-                  <tr key={p.id}>
-                    <td><PlayerName p={p} /> <StatusChip p={p} /><div className="faint" style={{ fontSize: 11.5 }}><TeamShort id={p.team} /> · {opp(p)}</div></td>
-                    <td className="r serif" style={{ fontSize: 18, fontWeight: 600 }}>{fmt(gwXp(p))}</td>
-                  </tr>
-                ))}
-              </tbody></table>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <section className="three">
         <div className="panel">
           <h3>Captain shortlist</h3>
@@ -124,7 +127,7 @@ export default function Overview() {
                 <td className="r"><b>{fmt(v, 2)}</b><div className="metric-note">xP per £m</div></td></tr>
             ))}
           </tbody></table>
-          <button className="btn small" style={{ marginTop: 8 }} onClick={() => go("planner")}>Open the planner →</button>
+          <button className="btn small" style={{ marginTop: 8 }} onClick={() => go("planner")}>Open player analysis →</button>
         </div>
         <div className="panel">
           <h3>Kindest fixtures, GW{gw}–{to}</h3>
@@ -142,5 +145,52 @@ export default function Overview() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** Two probable starters with almost the same xP but very different distributions: why the full distribution matters. */
+function SameXp({ starters, gw }: { starters: Player[]; gw: number }) {
+  const pick = useMemo(() => {
+    const one = starters.map((p) => {
+      const fx = p.fixtures.filter((f) => f.gw === gw);
+      return fx.length === 1 && fx[0].pmf ? { p, xp: fx[0].xp, pm: fx[0].pmf as Pmf, haul: atLeast(fx[0].pmf, 10), blank: 1 - atLeast(fx[0].pmf, 3) } : null;
+    }).filter((x): x is NonNullable<typeof x> => !!x && x.xp >= 4);
+    let best: [typeof one[0], typeof one[0]] | null = null, gap = 0;
+    for (let i = 0; i < one.length; i++) for (let j = i + 1; j < one.length; j++) {
+      const a = one[i], b = one[j];
+      if (a.p.pos !== b.p.pos || Math.abs(a.xp - b.xp) > 0.1) continue;   // like for like: same position, same xP
+      const g = Math.abs(a.haul - b.haul);
+      if (g > gap) { gap = g; best = a.haul > b.haul ? [a, b] : [b, a]; }
+    }
+    return best;
+  }, [starters, gw]);
+  if (!pick) return null;
+  const [hi, lo] = pick;
+  const card = (x: typeof hi, tag: string) => (
+    <div className="panel" style={{ flex: 1, minWidth: 260 }}>
+      <div className="row" style={{ justifyContent: "space-between" }}><span><PosChip pos={x.p.pos} /> <PlayerName p={x.p} /> <span className="faint"><TeamShort id={x.p.team} /></span></span>
+        <span className="metric-note">{tag}</span></div>
+      <div className="row" style={{ gap: 18, margin: "8px 0 4px" }}>
+        <span><span className="serif" style={{ fontSize: 26, fontWeight: 600 }}>{fmt(x.xp, 1)}</span> <span className="muted">xP</span></span>
+        <span><b>{(100 * x.haul).toFixed(0)}%</b> <span className="muted">chance of 10+</span></span>
+        <span><b>{(100 * x.blank).toFixed(0)}%</b> <span className="muted">blank risk</span></span>
+      </div>
+      <PmfBars pmf={x.pm} width={300} height={56} maxPts={20} />
+    </div>
+  );
+  return (
+    <section>
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
+        <h2>Same xP, different stories</h2>
+        <span className="metric-note">two {({ GKP: "goalkeepers", DEF: "defenders", MID: "midfielders", FWD: "forwards" } as const)[hi.p.pos]} · gameweek {gw} · full points distributions</span>
+      </div>
+      <p className="sub" style={{ marginTop: 4 }}>Expected points are only the average. Every xFPL forecast is a full distribution of
+        points, so you can see whether a player is a steady earner or a boom-or-bust bet, and choose the one that suits your rank.</p>
+      <div className="row" style={{ alignItems: "stretch", gap: 16 }}>{card(hi, "more upside")}{card(lo, "steadier")}</div>
+      <div className="row" style={{ marginTop: 12 }}>
+        <button className="btn primary" onClick={() => go("risk")}>Explore risk & upside →</button>
+        <span className="faint" style={{ fontSize: 12.5 }}>Protect a lead with players whose bad weeks are still decent, or chase a rival with upside, and see what it costs in xP.</span>
+      </div>
+    </section>
   );
 }

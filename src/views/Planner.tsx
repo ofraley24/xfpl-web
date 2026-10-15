@@ -56,7 +56,7 @@ export default function Planner() {
       <div className="panel">
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div>
-            <h2>Transfer planner</h2>
+            <h2>Player analysis</h2>
             <p className="sub">Expected points (given a start) summed over the gameweeks you pick. Click a fixture to switch it off.</p>
           </div>
           <RangePicker />

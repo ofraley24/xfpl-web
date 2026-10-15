@@ -27,8 +27,9 @@ starts**; it is labelled quietly in the metric names and explained in the paper.
 
 | page | what it does |
 | --- | --- |
-| Overview | the gameweek at a glance: evidence tiles from the validation, top picks per position, captain shortlist, value, kindest fixtures |
-| Transfer planner | xP over any gameweek range, xP per £m, haul chance; fixture cells you can switch off; filters incl. ownership and probable starters |
+| Overview | the gameweek at a glance: top picks per position, 'Same xP, different stories' (two same-position players with equal xP and different distributions), how it's built, evidence tiles, captain shortlist, value, kindest fixtures |
+| Player analysis | xP over any gameweek range, xP per £m, haul chance; fixture cells you can switch off; filters incl. ownership and probable starters |
+| Risk & upside | built on the full points distributions: strategy modes (protect a lead / expected points / chase a target), upside against xP with the typical upside for each xP (leave-one-out local regression; no comparison where too few similar players), bad-week (20th pct) and good-week (90th pct) outcomes, blank risk, upside swaps, chase captains. Multi-gameweek totals assume independent fixtures |
 | Fixtures | fixture ticker: expected goals for, clean-sheet chance or expected goal difference |
 | Captaincy | armband ranking with haul / blank chances from full points distributions; captain duel |
 | My squad | best XI and captain each gameweek, chip planner, transfer finder by squad effect |
