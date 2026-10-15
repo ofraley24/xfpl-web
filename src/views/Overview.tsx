@@ -45,9 +45,9 @@ export default function Overview() {
       <header>
         <div className="kicker">Gameweek {gw} · deadline {deadline.toLocaleString(undefined, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</div>
         <h1>Expected points, measured honestly.</h1>
-        <p className="lede">Rather than fitting past points to past stats, xFPL models how points are actually scored: dynamic
-          team-strength ratings, player talent separated from team quality, and every goal, assist, clean sheet and bonus point
-          played out a thousand times per fixture, on more than a decade of shot-level data.</p>
+        <p className="lede">xFPL is a points model built from the ground up: dynamic team-strength ratings, player talent
+          separated from team quality, and every goal, assist, clean sheet and bonus point played out a thousand times per
+          fixture, on more than a decade of shot-level data.</p>
       </header>
 
       <section aria-label="How it's built">
