@@ -22,7 +22,6 @@ export default function Overview() {
   const gwXp = (p: Player) => p.fixtures.filter((f) => f.gw === gw && !excluded.has(fixtureKey(p.id, f.fixture))).reduce((s, f) => s + f.xp, 0);
   const byPos = POSITIONS.map((pos) => ({ pos, top: starters.filter((p) => p.pos === pos).sort((a, b) => gwXp(b) - gwXp(a)).slice(0, 5) }));
   const value = [...starters].map((p) => ({ p, v: rangeXp(p, gw, to, excluded) / p.price })).sort((a, b) => b.v - a.v).slice(0, 6);
-  const captains = [...starters].sort((a, b) => gwXp(b) - gwXp(a)).slice(0, 3);
   const teams = useMemo(() => {
     const t = new Map<number, { xg: number; cs: number; n: number }>();
     for (const f of d.fc.fixtures) {
@@ -86,17 +85,7 @@ export default function Overview() {
       </section>
 
 
-      <section className="three">
-        <div className="panel">
-          <h3>Captain shortlist</h3>
-          <table className="plain"><tbody>
-            {captains.map((p, i) => (
-              <tr key={p.id}><td className="faint">{i + 1}</td><td><PlayerName p={p} /><div className="faint" style={{ fontSize: 11.5 }}>{opp(p)}</div></td>
-                <td className="r"><b>{fmt(2 * gwXp(p))}</b><div className="metric-note">as captain</div></td></tr>
-            ))}
-          </tbody></table>
-          <button className="btn small" style={{ marginTop: 8 }} onClick={() => go("captain")}>Haul and blank chances →</button>
-        </div>
+      <section className="two">
         <div className="panel">
           <h3>Best value, GW{gw}–{to}</h3>
           <table className="plain"><tbody>
