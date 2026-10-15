@@ -108,7 +108,7 @@ export default function Overview() {
           <button className="btn small" style={{ marginTop: 8 }} onClick={() => go("planner")}>Open player analysis →</button>
         </div>
         <div className="panel">
-          <h3>Kindest fixtures, GW{gw}–{to}</h3>
+          <h3>Strongest matchups, GW{gw}–{to}</h3>
           <table className="plain">
             <thead><tr><th>Attack</th><th className="r">xG</th><th>Defence</th><th className="r">CS</th></tr></thead>
             <tbody>
@@ -118,7 +118,7 @@ export default function Overview() {
               })}
             </tbody>
           </table>
-          <div className="faint" style={{ fontSize: 11.5, marginTop: 6 }}>Expected goals scored, and expected clean sheets, over the next six gameweeks.</div>
+          <div className="faint" style={{ fontSize: 11.5, marginTop: 6 }}>Expected goals scored and expected clean sheets over the next six gameweeks: each team's own strength and its opponents' combined.</div>
           <button className="btn small" style={{ marginTop: 8 }} onClick={() => go("fixtures")}>Full fixture ticker →</button>
         </div>
       </section>
