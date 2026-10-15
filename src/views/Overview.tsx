@@ -36,9 +36,9 @@ export default function Overview() {
       <header>
         <div className="kicker">Gameweek {gw} · deadline {deadline.toLocaleString(undefined, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</div>
         <h1>Expected points, measured honestly.</h1>
-        <p className="lede">Every forecast here comes from a model built from team strength, player talent and a thousand
-          simulated matches per fixture, then tested walk-forward on seven seasons, each predicted only from the seasons before it. Here is what it says about gameweek {gw}, and
-          the evidence for trusting it.</p>
+        <p className="lede">A probabilistic model of every way a player scores (goals, assists, clean sheets, bonus) played out a
+          thousand times per fixture, and validated against seven seasons of results it was never fitted to. Here is its view of
+          gameweek {gw}, and the evidence behind it.</p>
       </header>
 
       {dev && sealed && (
