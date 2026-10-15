@@ -108,8 +108,9 @@ export function PlayerSearch({ onPick, filter, placeholder = "Search player…" 
   );
 }
 
-/** Tiny bar histogram of a points distribution. */
+/** Interactive bar histogram of a points distribution: hover a bar for P(exactly x) and P(at least x). */
 export function PmfBars({ pmf, width = 220, height = 60, maxPts = 20 }: { pmf: { lo: number; p: number[] }; width?: number; height?: number; maxPts?: number }) {
+  const [hover, setHover] = useState<{ i: number; cx: number; cy: number } | null>(null);
   const lo = Math.min(0, pmf.lo);
   const vals: number[] = [];
   for (let x = lo; x <= maxPts; x++) {
@@ -119,20 +120,38 @@ export function PmfBars({ pmf, width = 220, height = 60, maxPts = 20 }: { pmf: {
   // fold the tail into the last bar
   const tail = pmf.p.slice(Math.max(0, maxPts + 1 - pmf.lo)).reduce((s, p) => s + p, 0);
   vals[vals.length - 1] += tail;
+  const atLeast = vals.map((_, i) => vals.slice(i).reduce((s, v) => s + v, 0));
   const top = Math.max(...vals, 1e-9);
   const w = width / vals.length;
+  const last = vals.length - 1;
+  const pc = (v: number) => (v >= 0.0995 ? `${(100 * v).toFixed(0)}%` : v >= 0.001 ? `${(100 * v).toFixed(1)}%` : "<0.1%");
+  const ticks = [0, 2, 5, ...Array.from({ length: Math.floor(maxPts / 5) }, (_, k) => 5 * (k + 2))].filter((x) => x >= lo && x <= maxPts);
   return (
-    <svg width={width} height={height + 14} role="img" aria-label="points distribution">
-      {vals.map((v, i) => {
-        const x = lo + i;
-        const h = (v / top) * height;
-        const col = x >= 10 ? "var(--gold)" : x >= 5 ? "var(--accent)" : "var(--cyan)";
-        return <rect key={i} x={i * w + 0.5} y={height - h} width={Math.max(1, w - 1)} height={h} fill={col} rx={1}><title>{`${x}${i === vals.length - 1 ? "+" : ""} pts: ${(100 * v).toFixed(1)}%`}</title></rect>;
-      })}
-      {[0, 2, 5, 10, 15, 20].filter((x) => x >= lo && x <= maxPts).map((x) => (
-        <text key={x} x={(x - lo) * w + w / 2} y={height + 12} textAnchor="middle">{x}</text>
-      ))}
-    </svg>
+    <span style={{ display: "inline-block", position: "relative" }}>
+      <svg width={width} height={height + 14} role="img" aria-label="points distribution" onMouseLeave={() => setHover(null)}>
+        {vals.map((v, i) => {
+          const x = lo + i;
+          const h = (v / top) * height;
+          const col = x >= 10 ? "var(--series-4)" : x >= 5 ? "var(--series-3)" : "var(--series-1)";
+          const dim = hover !== null && hover.i !== i;
+          return (
+            <g key={i} onMouseMove={(e) => setHover({ i, cx: e.clientX, cy: e.clientY })}>
+              <rect x={i * w} y={0} width={w} height={height} fill="transparent" />
+              <rect x={i * w + 0.5} y={height - h} width={Math.max(1, w - 1)} height={Math.max(h, v > 0 ? 1 : 0)} fill={col} rx={1}
+                opacity={dim ? 0.45 : 1} />
+            </g>
+          );
+        })}
+        {hover && <line x1={hover.i * w + w / 2} x2={hover.i * w + w / 2} y1={0} y2={height} stroke="var(--text)" strokeWidth={0.75} strokeDasharray="2 2" opacity={0.5} pointerEvents="none" />}
+        {ticks.map((x) => <text key={x} x={(x - lo) * w + w / 2} y={height + 12} textAnchor="middle">{x}</text>)}
+      </svg>
+      {hover && (
+        <div className="tooltip" style={{ left: hover.cx + 14, top: hover.cy + 14 }}>
+          <b>{lo + hover.i}{hover.i === last ? "+" : ""} pts</b>: {pc(vals[hover.i])}
+          {hover.i > 0 && hover.i < last && <><br /><span className="muted">{lo + hover.i} or more: {pc(atLeast[hover.i])}</span></>}
+        </div>
+      )}
+    </span>
   );
 }
 
