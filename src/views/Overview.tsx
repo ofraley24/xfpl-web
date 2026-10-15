@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { go } from "../App";
 import { fixtureKey, fmt, POSITIONS, rangeXp, useApp } from "../data";
-import { useEvidence } from "../evidence";
 import { atLeast } from "../prob";
 import type { Player, Pmf } from "../types";
 import { PlayerName, PmfBars, PosChip, StatusChip, TeamShort } from "../ui";
@@ -17,7 +16,6 @@ const PILLARS = [
 
 export default function Overview() {
   const { d, excluded } = useApp();
-  const { v: ev } = useEvidence();
   const gw = d.fc.deadline_gw;
   const to = Math.min(d.gws[d.gws.length - 1], gw + 5);
   const starters = useMemo(() => d.players.filter((p) => p.fixtures.some((f) => f.gw === gw && f.xi) && (p.status === "a" || (p.chance_next ?? 0) >= 75)), [d, gw]);
@@ -38,7 +36,6 @@ export default function Overview() {
     return [...t.entries()].map(([id, o]) => ({ id, ...o }));
   }, [d, gw, to]);
   const opp = (p: Player) => p.fixtures.filter((f) => f.gw === gw).map((f) => (f.home ? d.teams.get(f.opp)?.short : d.teams.get(f.opp)?.short.toLowerCase())).join(", ");
-  const dev = ev?.sets.dev, sealed = ev?.sets.sealed;
   const deadline = new Date(d.fc.deadline_utc);
 
   return (
@@ -88,25 +85,6 @@ export default function Overview() {
         </div>
       </section>
 
-      {dev && sealed && (
-        <section>
-          <div className="three" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
-            <div className="stat-tile"><div className="v">{(dev.accuracy.model.rank / dev.accuracy.pps5.rank).toFixed(1)}×</div>
-              <div className="l">the ranking accuracy of a points-per-start baseline (rank correlation {dev.accuracy.model.rank.toFixed(2)} vs {dev.accuracy.pps5.rank.toFixed(2)} over six test seasons)</div></div>
-            <div className="stat-tile"><div className="v">±{(100 * Math.max(...[dev, sealed, ev!.sets.live].map((s) => Math.abs(s.high_end.all.ratio - 1)))).toFixed(1)}%</div>
-              <div className="l">overall calibration in every test set: predicted points match what actually happened</div></div>
-            <div className="stat-tile"><div className="v">{(100 * dev.pit.c80).toFixed(0)}%</div>
-              <div className="l">of outcomes fell inside the model's central 80% range: its uncertainty is honest, not decorative</div></div>
-            <div className="stat-tile"><div className="v">8 GW</div>
-              <div className="l">ahead with almost no loss of accuracy (mean error +0.1%), in a backtest with every input frozen at the earlier deadline</div></div>
-          </div>
-          <div className="row" style={{ marginTop: 14 }}>
-            <button className="btn" onClick={() => go("paper")}>Read the paper</button>
-            <button className="btn" onClick={() => go("record")}>Live track record</button>
-            <span className="faint" style={{ fontSize: 12.5 }}>All 15 leakage-audit tests pass · every model change judged by a rule written before the run</span>
-          </div>
-        </section>
-      )}
 
       <section className="three">
         <div className="panel">
