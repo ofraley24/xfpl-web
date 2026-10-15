@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppCtx, derive, fixtureKey, useStored, type AppState, type Derived } from "./data";
 import type { Forecast } from "./types";
+import Overview from "./views/Overview";
 import Planner from "./views/Planner";
 import Fixtures from "./views/Fixtures";
 import Squad from "./views/Squad";
@@ -10,22 +11,37 @@ import Scatter from "./views/Scatter";
 import Simulator from "./views/Simulator";
 import Compare from "./views/Compare";
 import Stats from "./views/Stats";
-import About from "./views/About";
+import Paper from "./views/Paper";
+import TrackRecord from "./views/TrackRecord";
 import PlayerDrawer from "./views/PlayerDrawer";
 
-const TABS = [
-  ["planner", "Planner"],
-  ["fixtures", "Fixtures"],
-  ["squad", "My squad"],
-  ["optimiser", "Dream team"],
-  ["captain", "Captaincy"],
-  ["scatter", "Haul map"],
-  ["sim", "Simulator"],
-  ["compare", "Compare"],
-  ["stats", "Stats"],
-  ["about", "About"],
-] as const;
-type Tab = (typeof TABS)[number][0];
+const NAV: { group: string | null; items: [string, string][] }[] = [
+  { group: null, items: [["overview", "Overview"]] },
+  { group: "Plan", items: [["planner", "Transfer planner"], ["fixtures", "Fixtures"], ["captain", "Captaincy"]] },
+  { group: "My team", items: [["squad", "My squad"], ["optimiser", "Dream team"], ["sim", "Simulator"]] },
+  { group: "Explore", items: [["stats", "Stats"], ["scatter", "Haul map"], ["compare", "Compare"]] },
+  { group: "Method", items: [["paper", "The paper"], ["record", "Track record"]] },
+];
+const ROUTES = new Set(NAV.flatMap((g) => g.items.map(([k]) => k)));
+export type Route = string;
+
+export function go(route: Route) {
+  window.location.hash = `#/${route}`;
+}
+
+function useRoute(): Route {
+  const read = () => {
+    const r = window.location.hash.replace(/^#\/?/, "").split("/")[0];
+    return ROUTES.has(r) ? r : "overview";
+  };
+  const [r, setR] = useState(read);
+  useEffect(() => {
+    const on = () => { setR(read()); window.scrollTo(0, 0); };
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
+  return r;
+}
 
 export default function App() {
   const [d, setD] = useState<Derived | null>(null);
@@ -37,12 +53,21 @@ export default function App() {
       .catch((e) => setErr(String(e)));
   }, []);
   if (err) return <main><div className="panel">Could not load <code>data/forecast.json</code> ({err}). Run <code>npm run sync-data</code>.</div></main>;
-  if (!d) return <main><div className="panel muted">Loading forecast…</div></main>;
+  if (!d) return <main><div className="muted">Loading forecast…</div></main>;
   return <Loaded d={d} />;
 }
 
+function Countdown({ iso }: { iso: string }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(t); }, []);
+  const ms = new Date(iso).getTime() - now;
+  if (ms <= 0) return <span className="countdown">deadline passed</span>;
+  const d = Math.floor(ms / 86_400_000), h = Math.floor((ms % 86_400_000) / 3_600_000), m = Math.floor((ms % 3_600_000) / 60_000);
+  return <span className="countdown">{d > 0 ? `${d}d ` : ""}{h}h {String(m).padStart(2, "0")}m</span>;
+}
+
 function Loaded({ d }: { d: Derived }) {
-  const [tab, setTab] = useStored<Tab>("tab", "planner");
+  const route = useRoute();
   const first = d.gws[0], last = d.gws[d.gws.length - 1];
   const [rng, setRng] = useStored<[number, number]>(`range:${d.fc.deadline_gw}`, [first, Math.min(last, first + 5)]);
   const [excludedArr, setExcluded] = useStored<string[]>(`excluded:${d.fc.deadline_gw}`, []);
@@ -50,11 +75,13 @@ function Loaded({ d }: { d: Derived }) {
   const [squad, setSquad] = useStored<number[]>("squad", []);
   const [bank, setBank] = useStored<number>("bank", 0);
   const [open, setOpen] = useState<number | null>(null);
+  const [menu, setMenu] = useState(false);
   const [theme, setTheme] = useStored<"auto" | "light" | "dark">("theme", "auto");
   useEffect(() => {
     if (theme === "auto") document.documentElement.removeAttribute("data-theme");
     else document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+  useEffect(() => setMenu(false), [route]);
 
   const excluded = useMemo(() => new Set(excludedArr), [excludedArr]);
   const state: AppState = {
@@ -76,46 +103,65 @@ function Loaded({ d }: { d: Derived }) {
     setBank,
   };
   const deadline = new Date(d.fc.deadline_utc);
+  const narrow = route === "paper";
   return (
     <AppCtx.Provider value={state}>
-      <header className="top">
-        <div className="top-inner">
-          <div className="brand">x<b>FPL</b> <small>GW{d.fc.deadline_gw} deadline {deadline.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</small></div>
-          <nav className="tabs">
-            {TABS.map(([k, label]) => (
-              <button key={k} className={`tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>
-                {label}{k === "compare" && compare.length ? ` (${compare.length})` : ""}
-              </button>
+      <div className="mobile-bar">
+        <button className="btn small" onClick={() => setMenu(true)} aria-label="Open menu">☰</button>
+        <span className="wordmark">x<i>FPL</i></span>
+        <span className="spacer" />
+        <span className="muted" style={{ fontSize: 12 }}>GW{d.fc.deadline_gw} · <Countdown iso={d.fc.deadline_utc} /></span>
+      </div>
+      {menu && <div className="drawer-bg" onClick={() => setMenu(false)} />}
+      <div className="shell">
+        <aside className={`side ${menu ? "open" : ""}`}>
+          <div>
+            <div className="wordmark">x<i>FPL</i></div>
+            <div className="tagline">Expected FPL points from a model you can audit.</div>
+          </div>
+          <nav className="grid" style={{ gap: 14 }} aria-label="Sections">
+            {NAV.map((g) => (
+              <div key={g.group ?? "home"} className="nav-group">
+                {g.group && <div className="nav-label">{g.group}</div>}
+                {g.items.map(([k, label]) => (
+                  <button key={k} className={`nav-item ${route === k ? "on" : ""}`} onClick={() => go(k)}>
+                    <span>{label}</span>{k === "compare" && compare.length ? <span className="faint">{compare.length}</span> : null}
+                  </button>
+                ))}
+              </div>
             ))}
           </nav>
-          <span className="spacer" />
-          <div className="seg" title="Theme">
-            {(["auto", "light", "dark"] as const).map((t) => (
-              <button key={t} className={theme === t ? "on" : ""} onClick={() => setTheme(t)}>{t}</button>
-            ))}
+          <div className="side-foot">
+            <div>
+              <div className="nav-label" style={{ margin: "0 0 2px" }}>Gameweek {d.fc.deadline_gw} deadline</div>
+              <div>{deadline.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
+              <div>in <Countdown iso={d.fc.deadline_utc} /></div>
+            </div>
+            <div className="faint" style={{ fontSize: 11.5, lineHeight: 1.4 }}>
+              xP = expected FPL points <b>if the player starts</b>. <a href="#/paper" onClick={() => go("paper")}>How it's built</a>
+            </div>
+            <div className="seg" title="Theme">
+              {(["auto", "light", "dark"] as const).map((t) => (
+                <button key={t} className={theme === t ? "on" : ""} onClick={() => setTheme(t)}>{t}</button>
+              ))}
+            </div>
           </div>
-        </div>
-      </header>
-      <main>
-        <div className="banner">
-          <span>⚠️</span>
-          <span>
-            <b>Every number assumes the player starts.</b> xP is expected FPL points <i>given a start</i>, so backup keepers and
-            injured players can look great. Check the status chips, click a fixture cell to switch it off, or use the
-            "probable starters" filter. {excluded.size > 0 && <>{excluded.size} fixture{excluded.size > 1 ? "s" : ""} switched off. <button className="btn small" onClick={() => setExcluded([])}>reset</button></>}
-          </span>
-        </div>
-        {tab === "planner" && <Planner />}
-        {tab === "fixtures" && <Fixtures />}
-        {tab === "squad" && <Squad />}
-        {tab === "optimiser" && <Optimiser />}
-        {tab === "captain" && <Captaincy />}
-        {tab === "scatter" && <Scatter />}
-        {tab === "sim" && <Simulator />}
-        {tab === "compare" && <Compare />}
-        {tab === "stats" && <Stats />}
-        {tab === "about" && <About />}
-      </main>
+        </aside>
+        <main className={narrow ? "narrow" : ""}>
+          {route === "overview" && <Overview />}
+          {route === "planner" && <Planner />}
+          {route === "fixtures" && <Fixtures />}
+          {route === "captain" && <Captaincy />}
+          {route === "squad" && <Squad />}
+          {route === "optimiser" && <Optimiser />}
+          {route === "sim" && <Simulator />}
+          {route === "stats" && <Stats />}
+          {route === "scatter" && <Scatter />}
+          {route === "compare" && <Compare />}
+          {route === "paper" && <Paper />}
+          {route === "record" && <TrackRecord />}
+        </main>
+      </div>
       {open !== null && d.byId.has(open) && <PlayerDrawer id={open} onClose={() => setOpen(null)} />}
     </AppCtx.Provider>
   );

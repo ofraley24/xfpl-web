@@ -5,7 +5,7 @@ import {
   type StatPlayer, type StatsDoc, type StatTeam, type Window,
 } from "../stats";
 import type { Pos } from "../types";
-import { PosChip } from "../ui";
+import { placeLabels, POS_SHAPE, PosChip, PosMarker } from "../ui";
 
 type Sub = "players" | "teams" | "explorer";
 
@@ -41,8 +41,8 @@ export default function Stats() {
 }
 
 const shade = (pct: number) => pct >= 0.5
-  ? `color-mix(in srgb, var(--accent) ${Math.round((pct - 0.5) * 120)}%, transparent)`
-  : `color-mix(in srgb, var(--pink) ${Math.round((0.5 - pct) * 90)}%, transparent)`;
+  ? `color-mix(in srgb, var(--good) ${Math.round((pct - 0.5) * 70)}%, transparent)`
+  : `color-mix(in srgb, var(--bad) ${Math.round((0.5 - pct) * 55)}%, transparent)`;
 
 function PlayersTable({ doc, w, open }: { doc: StatsDoc; w: Window; open: (id: number) => void }) {
   const { d } = useApp();
@@ -199,8 +199,8 @@ function Explorer({ doc, w, open }: { doc: StatsDoc; w: Window; open: (id: numbe
 
   const pts = mode === "players"
     ? doc.players.filter((p) => show.includes(p.pos) && (p.s[w].mins ?? 0) >= minMins)
-      .map((p) => ({ id: p.id, label: p.name, x: statValue(p, w, xk, per90), y: statValue(p, w, yk, per90), color: `var(--pos-${p.pos})`, size: 3 + Math.sqrt(p.s[w].mins ?? 0) / 6 }))
-    : doc.teams.map((t) => ({ id: -t.id, label: t.short, x: teamValue(t, w, txk, true), y: teamValue(t, w, tyk, true), color: "var(--accent)", size: 9 }));
+      .map((p) => ({ id: p.id, label: p.name, pos: p.pos as Pos | null, x: statValue(p, w, xk, per90), y: statValue(p, w, yk, per90), color: `var(--pos-${p.pos})`, size: 3 + Math.sqrt(p.s[w].mins ?? 0) / 6 }))
+    : doc.teams.map((t) => ({ id: -t.id, label: t.short, pos: null as Pos | null, x: teamValue(t, w, txk, true), y: teamValue(t, w, tyk, true), color: "var(--series-1)", size: 7 }));
   const ok = pts.filter((p): p is typeof p & { x: number; y: number } => p.x !== null && p.y !== null);
   const W = 900, H = 520, M = { l: 56, r: 24, t: 16, b: 42 };
   const xs = ok.map((p) => p.x), ys = ok.map((p) => p.y);
@@ -251,14 +251,18 @@ function Explorer({ doc, w, open }: { doc: StatsDoc; w: Window; open: (id: numbe
             ? <line x1={sx(Math.max(x0, y0))} y1={sy(Math.max(x0, y0))} x2={sx(Math.min(x1, y1))} y2={sy(Math.min(x1, y1))} stroke="var(--muted)" strokeDasharray="5 4" />
             : <><line x1={sx(mx)} x2={sx(mx)} y1={M.t} y2={H - M.b} stroke="var(--faint)" strokeDasharray="2 4" /><line x1={M.l} x2={W - M.r} y1={sy(my)} y2={sy(my)} stroke="var(--faint)" strokeDasharray="2 4" /></>}
           {ok.map((p) => (
-            <circle key={p.id} className="dot" cx={sx(p.x)} cy={sy(p.y)} r={p.size} fill={p.color} fillOpacity={0.55} stroke={p.color}
-              onMouseEnter={(e) => setHover({ label: p.label, x: p.x, y: p.y, cx: e.clientX, cy: e.clientY })} onMouseLeave={() => setHover(null)}
-              onClick={() => p.id > 0 && open(p.id)} />
+            p.pos
+              ? <PosMarker key={p.id} pos={p.pos} x={sx(p.x)} y={sy(p.y)} r={p.size} opacity={0.5}
+                onMouseEnter={(e) => setHover({ label: p.label, x: p.x, y: p.y, cx: e.clientX, cy: e.clientY })} onMouseLeave={() => setHover(null)}
+                onClick={() => open(p.id)} />
+              : <circle key={p.id} className="dot" cx={sx(p.x)} cy={sy(p.y)} r={p.size} fill={p.color} fillOpacity={0.6} stroke={p.color}
+                onMouseEnter={(e) => setHover({ label: p.label, x: p.x, y: p.y, cx: e.clientX, cy: e.clientY })} onMouseLeave={() => setHover(null)} />
           ))}
-          {ok.filter((p) => far.has(p.id)).map((p) => (
-            <text key={`l${p.id}`} x={sx(p.x) + (sx(p.x) > W - 110 ? -8 : 7)} y={sy(p.y) - 7} textAnchor={sx(p.x) > W - 110 ? "end" : "start"} style={{ fill: "var(--text)", fontWeight: 700 }}>{p.label}</text>
+          {placeLabels(ok.filter((p) => far.has(p.id)), (p) => ({ x: sx(p.x), y: sy(p.y), text: p.label }), W).map(({ item: p, x, y: ly, anchor }) => (
+            <text key={`l${p.id}`} x={x} y={ly} textAnchor={anchor} style={{ fill: "var(--text)", fontWeight: 650 }}>{p.label}</text>
           ))}
         </svg>
+        {mode === "players" && <div className="legend">{show.map((p) => <span key={p}><span style={{ color: `var(--pos-${p})` }}>{POS_SHAPE[p]}</span> {p}</span>)}<span>size = minutes played</span></div>}
       </div>
       {hover && <div className="tooltip" style={{ left: hover.cx + 12, top: hover.cy + 12 }}><b>{hover.label}</b><br />{xl}: {tick(hover.x)} · {yl}: {tick(hover.y)}</div>}
     </>

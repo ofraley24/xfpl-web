@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { fixtureKey, fixturesIn, fmt, pct, POSITIONS, useApp, useStored } from "../data";
 import type { Player, Pos } from "../types";
-import { heat, PlayerName, PosChip, RangePicker, StatusChip, TeamShort } from "../ui";
+import { heat, heatInk, PlayerName, PosChip, RangePicker, StatusChip, TeamShort } from "../ui";
 
 type SortKey = "xp" | "value" | "price" | "own" | "haul" | "perfx" | `gw${number}`;
 
@@ -101,7 +101,7 @@ export default function Planner() {
               <th>Team</th>
               {th("price", "£m")}
               {th("own", "Own")}
-              {th("xp", `xP GW${from}${to > from ? `–${to}` : ""}`)}
+              {th("xp", `xP · if starts, GW${from}${to > from ? `–${to}` : ""}`)}
               {th("value", "xP/£m")}
               {th("perfx", "xP/fix")}
               {th("haul", "Haul %")}
@@ -146,7 +146,7 @@ export function GwCell({ p, gw, excluded, toggle }: { p: Player; gw: number; exc
           const off = excluded.has(fixtureKey(p.id, f.fixture));
           const opp = d.teams.get(f.opp)?.short ?? "?";
           return (
-            <span key={f.fixture} className={`cell ${off ? "off" : ""}`} style={{ background: heat(f.xp, 8) }}
+            <span key={f.fixture} className={`cell ${off ? "off" : ""}`} style={{ background: heat(f.xp, 8), color: heatInk(f.xp, 8) }}
               title={`${opp} (${f.home ? "home" : "away"}) — xP ${f.xp.toFixed(2)}, P(10+) ${(100 * f.p10).toFixed(0)}%${off ? " — switched off" : ""}. Click to toggle.`}
               onClick={() => toggle(p.id, f.fixture)}>
               <b className="num">{f.xp.toFixed(1)}</b>

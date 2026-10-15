@@ -21,23 +21,27 @@ are data, not code: `public/data/*.json` is gitignored.
 
 ## What's in it
 
-| tab | what it does |
-| --- | --- |
-| Planner | every player's xP summed over any gameweek range, xP per £m, chance of a 10+ haul; colour-coded fixture cells you can click to switch off; filters for position, team, price, ownership (differentials), probable starters, fitness |
-| Fixtures | fixture ticker by team: expected goals for, clean-sheet chance, or expected goal difference over the range |
-| My squad | build your 15 (or load the dream team); best XI and captain picked each gameweek on a pitch view; chip planner (best Bench Boost and Triple Captain gameweeks); transfer finder ranking every legal single swap by what it adds to your squad |
-| Dream team | the optimal 15 under FPL's rules (2/5/5/3, ≤ 3 per club, budget) for the range, solved as an integer program in the browser; lock / ban players |
-| Captaincy | armband ranking per gameweek with haul (10+, 15+) and blank chances from each player's full points distribution; captain duel: P(A outscores B) |
-| Haul map | scatter of every probable starter: price vs xP / xP per £m / haul chance; bubble size = ownership |
-| Simulator | play your gameweek out: each starter's score drawn from their simulated distribution, exact distribution of your team total, chance to reach a target, range outlook |
-| Compare | up to four players side by side, per-gameweek chart |
-| Stats | the season so far (or the last 4 gameweeks): player table with stat groups (shooting, creating, defending, goalkeeping, FPL), per-90 toggle and percentile shading; team table with xG / xGA / xPts / pressing and the model's attack and defence ratings with trend lines; an explorer plotting any stat against any other; player cards with shot maps and percentile bars against the same position. Reads `public/data/stats.json` (`xFPL/analysis/27_export_stats.py`) |
-| About | what the numbers mean, the horizon backtest, this forecast's provenance and quality gates |
+Editorial design (serif display, paper-and-ink palette with light and dark modes, validated chart colours), a sidebar
+grouped by task, bookmarkable pages (`#/planner`, `#/paper`, ...). xP everywhere means expected points **if the player
+starts**; it is labelled quietly in the metric names and explained in the paper.
 
-Clicking a player opens a card with their points broken down by source (goals, assists, clean sheets, bonus, ...) and a
-distribution chart for every fixture.
+| page | what it does |
+| --- | --- |
+| Overview | the gameweek at a glance: evidence tiles from the validation, top picks per position, captain shortlist, value, kindest fixtures |
+| Transfer planner | xP over any gameweek range, xP per £m, haul chance; fixture cells you can switch off; filters incl. ownership and probable starters |
+| Fixtures | fixture ticker: expected goals for, clean-sheet chance or expected goal difference |
+| Captaincy | armband ranking with haul / blank chances from full points distributions; captain duel |
+| My squad | best XI and captain each gameweek, chip planner, transfer finder by squad effect |
+| Dream team | the optimal 15 under FPL's rules, solved as an integer program in the browser |
+| Simulator | play a gameweek out from the simulated distributions; team-total distribution |
+| Stats | season / last-4 player and team stats, explorer, shot maps and percentiles |
+| Haul map, Compare | price vs xP scatter (position by shape and colour); side-by-side players |
+| The paper | condensed version of the Results Report: method, testing, results with live figures (`evidence.json`), horizon backtest, benchmark caveat, limitations; coefficients and hyperparameters withheld |
+| Track record | each locked pre-deadline forecast scored after its gameweek against FPL's own projection (`track_record.json`); this week's provenance and quality gates |
 
 ## Data contract (`forecast.json`, schema 2)
+
+Also synced: `stats.json` (27), `evidence.json` (28), `track_record.json` (29).
 
 Header: season, deadline gameweek and time, gameweeks covered, FPL snapshot time, model id (code commit, training-data
 hash), the forecast's quality gates. `teams`; `fixtures` (team expected goals from ratings frozen at the deadline);

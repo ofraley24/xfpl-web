@@ -2,13 +2,23 @@ import { useMemo, useState } from "react";
 import { fmt, useApp } from "./data";
 import type { Player, Pos } from "./types";
 
-/** Background for an xP value: pink (poor) -> neutral -> green (great), on a lo..hi scale. */
+/** Sequential (one hue, light -> dark) background for an xP value on a lo..hi scale, with a readable ink. */
 export function heat(x: number, hi: number, lo = 2) {
   const t = Math.max(0, Math.min(1, (x - lo) / (hi - lo)));
-  return t >= 0.4
-    ? `color-mix(in srgb, var(--accent) ${Math.round(((t - 0.4) / 0.6) * 80)}%, var(--heat-0))`
-    : `color-mix(in srgb, var(--pink) ${Math.round(((0.4 - t) / 0.4) * 55)}%, var(--heat-0))`;
+  return `color-mix(in srgb, var(--seq-5) ${Math.round(t * 100)}%, var(--seq-0))`;
 }
+export const heatInk = (x: number, hi: number, lo = 2) => ((x - lo) / (hi - lo) > 0.55 ? "#ffffff" : "var(--text)");
+
+/** Position marker: colour plus a shape, so position never depends on colour alone. */
+export function PosMarker({ pos, x, y, r, opacity = 0.7, ...rest }: { pos: Pos; x: number; y: number; r: number; opacity?: number } & React.SVGProps<SVGPathElement>) {
+  const c = `var(--pos-${pos})`;
+  const d = pos === "DEF" ? `M ${x} ${y} m ${-r} 0 a ${r} ${r} 0 1 0 ${2 * r} 0 a ${r} ${r} 0 1 0 ${-2 * r} 0`
+    : pos === "MID" ? `M ${x - r * 0.88} ${y - r * 0.88} h ${1.76 * r} v ${1.76 * r} h ${-1.76 * r} z`
+    : pos === "FWD" ? `M ${x} ${y - r * 1.15} L ${x + r * 1.05} ${y + r * 0.75} L ${x - r * 1.05} ${y + r * 0.75} z`
+    : `M ${x} ${y - r * 1.15} L ${x + r * 1.05} ${y} L ${x} ${y + r * 1.15} L ${x - r * 1.05} ${y} z`;
+  return <path d={d} fill={c} fillOpacity={opacity} stroke={c} strokeWidth={1.2} className="dot" {...rest} />;
+}
+export const POS_SHAPE: Record<Pos, string> = { GKP: "◆", DEF: "●", MID: "■", FWD: "▲" };
 
 export const PosChip = ({ pos }: { pos: Pos }) => <span className={`chip pos pos-${pos}`}>{pos}</span>;
 
@@ -124,4 +134,20 @@ export function PmfBars({ pmf, width = 220, height = 60, maxPts = 20 }: { pmf: {
       ))}
     </svg>
   );
+}
+
+/** Greedy label placement: keep a label only if its box does not overlap one already placed (priority order). */
+export function placeLabels<T>(items: T[], pos: (t: T) => { x: number; y: number; text: string }, W: number) {
+  const boxes: { x0: number; x1: number; y0: number; y1: number }[] = [];
+  const out: { item: T; x: number; y: number; anchor: "start" | "end" }[] = [];
+  for (const it of items) {
+    const p = pos(it);
+    const w = p.text.length * 6.4 + 4;
+    const right = p.x + 7 + w < W - 8;
+    const x0 = right ? p.x + 6 : p.x - 8 - w, x1 = x0 + w, y0 = p.y - 20, y1 = p.y - 6;
+    if (boxes.some((b) => x0 < b.x1 && x1 > b.x0 && y0 < b.y1 && y1 > b.y0)) continue;
+    boxes.push({ x0, x1, y0, y1 });
+    out.push({ item: it, x: right ? p.x + 6 : p.x - 8, y: p.y - 8, anchor: right ? "start" : "end" });
+  }
+  return out;
 }

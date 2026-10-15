@@ -1,7 +1,7 @@
 import { fmt, gwXp, pct, rangeXp, useApp } from "../data";
 import { PlayerName, PlayerSearch, PosChip, RangePicker, StatusChip, TeamShort } from "../ui";
 
-const COLS = ["var(--accent)", "var(--pink)", "var(--cyan)", "var(--gold)"];
+const COLS = ["var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)"];
 
 export default function Compare() {
   const { d, compare, toggleCompare, from, to, excluded } = useApp();

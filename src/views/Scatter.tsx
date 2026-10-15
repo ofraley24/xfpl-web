@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { fixturesIn, fmt, pct, POSITIONS, useApp, useStored } from "../data";
 import type { Player, Pos } from "../types";
-import { RangePicker } from "../ui";
+import { placeLabels, POS_SHAPE, PosMarker, RangePicker } from "../ui";
 
 type YKey = "xp" | "value" | "haul";
 
@@ -37,7 +37,7 @@ export default function Scatter() {
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div>
             <h2>Haul map</h2>
-            <p className="sub">Every probable starter by price. Bubble size = ownership, colour intensity = chance of a 10+ haul. Hunt the
+            <p className="sub">Every probable starter by price. Marker size = ownership, shading = chance of a 10+ haul, shape = position. Hunt the
               big, bright bubbles low on price for value, the small ones for differentials. Click one to open the player.</p>
           </div>
           <RangePicker />
@@ -68,16 +68,17 @@ export default function Scatter() {
           <text x={(M.l + W - M.r) / 2} y={H - 4} textAnchor="middle">price</text>
           <text x={12} y={(M.t + H - M.b) / 2} textAnchor="middle" transform={`rotate(-90 12 ${(M.t + H - M.b) / 2})`}>{label}</text>
           {pts.map((r) => (
-            <circle key={r.p.id} className="dot" cx={sx(r.p.price)} cy={sy(r[y])} r={3 + Math.sqrt(r.p.own) * 1.6}
-              fill={`var(--pos-${r.p.pos})`} fillOpacity={0.25 + 0.75 * Math.min(1, r.haul / 0.6)} stroke={`var(--pos-${r.p.pos})`}
+            <PosMarker key={r.p.id} pos={r.p.pos} x={sx(r.p.price)} y={sy(r[y])} r={3 + Math.sqrt(r.p.own) * 1.6}
+              opacity={0.2 + 0.7 * Math.min(1, r.haul / 0.6)}
               onMouseEnter={(e) => setHover({ p: r.p, x: e.clientX, y: e.clientY, v: r[y], h: r.haul })}
               onMouseLeave={() => setHover(null)} onClick={() => openPlayer(r.p.id)} />
           ))}
-          {pts.filter((r) => stars.has(r.p.id)).map((r) => (
-            <text key={`l${r.p.id}`} x={sx(r.p.price) + (sx(r.p.price) > W - 110 ? -8 : 6)} y={sy(r[y]) - 8}
-              textAnchor={sx(r.p.price) > W - 110 ? "end" : "start"} style={{ fill: "var(--text)", fontWeight: 700 }}>{r.p.name}</text>
+          {placeLabels(pts.filter((r) => stars.has(r.p.id)).sort((a, b) => b[y] - a[y]), (r) => ({ x: sx(r.p.price), y: sy(r[y]), text: r.p.name }), W).map(({ item: r, x, y: ly, anchor }) => (
+            <text key={`l${r.p.id}`} x={x} y={ly} textAnchor={anchor} style={{ fill: "var(--text)", fontWeight: 650 }}>{r.p.name}</text>
           ))}
         </svg>
+        <div className="legend">{show.map((p) => <span key={p}><span style={{ color: `var(--pos-${p})` }}>{POS_SHAPE[p]}</span> {p}</span>)}
+          <span>size = ownership · opacity = haul chance</span></div>
       </div>
       {hover && (
         <div className="tooltip" style={{ left: hover.x + 12, top: hover.y + 12 }}>

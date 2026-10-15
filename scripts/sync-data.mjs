@@ -28,3 +28,11 @@ if (stats.length) {
   copyFileSync(join(src, stats[stats.length - 1]), join(dst, "stats.json"));
   console.log(`sync-data: ${stats[stats.length - 1]} -> public/data/stats.json`);
 }
+
+// evidence (validation results) and the live track record
+for (const f of ["evidence.json", "track_record.json"]) {
+  if (existsSync(join(src, f))) {
+    copyFileSync(join(src, f), join(dst, f));
+    console.log(`sync-data: ${f} -> public/data/${f}`);
+  }
+}
