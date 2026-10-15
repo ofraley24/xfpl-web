@@ -9,6 +9,11 @@ export interface StatPlayer {
   id: number; name: string; team: number; pos: Pos; price: number; own: number; status: string; form: number;
   s: Record<Window, Totals>;
   shots: [number, number, number, string, number, number, boolean][]; // x, y, xG, result (G/S/M/B/P), minute, gw, penalty
+  recent?: RecentMatch[];   // last six team fixtures, most recent first
+}
+export interface RecentMatch {
+  gw: number; opp: number; home: boolean; mins: number; start: number; g: number; a: number; xg: number; xa: number;
+  shots: number; kp: number; cs: number; bonus: number; pts: number; score: string | null;
 }
 export interface StatTeam {
   id: number; name: string; short: string;
@@ -20,12 +25,13 @@ export interface StatsDoc {
   notes: Record<string, string>; players: StatPlayer[]; teams: StatTeam[];
 }
 
+let cache: Promise<StatsDoc> | null = null;   // one fetch per page load, shared by every view and player card
 export function useStats() {
   const [doc, setDoc] = useState<StatsDoc | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
-    fetch("./data/stats.json").then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then(setDoc).catch((e) => setErr(String(e)));
+    cache ??= fetch("./data/stats.json").then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))));
+    cache.then(setDoc).catch((e) => { cache = null; setErr(String(e)); });
   }, []);
   return { doc, err };
 }

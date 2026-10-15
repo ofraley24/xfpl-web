@@ -1,10 +1,11 @@
 import { useEffect } from "react";
+import { useStats, type RecentMatch } from "../stats";
 import { fixtureKey, fmt, partsInPoints, pct, useApp } from "../data";
 import { PmfBars, PosChip, StatusChip } from "../ui";
 
 const PART_COL: Record<string, string> = {
-  app: "#8a7896", goals: "var(--pink)", assists: "var(--cyan)", cs: "var(--pos-DEF)", bonus: "var(--gold)", saves: "var(--pos-GKP)",
-  dc: "var(--pos-MID)", pen_saved: "#c77dff", conceded: "#666", cards: "#444", other: "#444",
+  app: "var(--line-strong)", goals: "var(--series-2)", assists: "var(--series-1)", cs: "var(--series-3)", bonus: "var(--series-4)",
+  saves: "var(--pos-GKP)", dc: "var(--pos-MID)", pen_saved: "var(--series-1)", conceded: "var(--faint)", cards: "var(--faint)", other: "var(--faint)",
 };
 
 export default function PlayerDrawer({ id, onClose }: { id: number; onClose: () => void }) {
@@ -38,7 +39,7 @@ export default function PlayerDrawer({ id, onClose }: { id: number; onClose: () 
         <div className="row muted">£{fmt(p.price)}m · owned by {fmt(p.own)}% ·
           <button className="btn small" onClick={() => toggleCompare(p.id)}>{compare.includes(p.id) ? "remove from compare" : "add to compare"}</button>
         </div>
-        {p.news && <div className="banner" style={{ marginTop: 10 }}><span>📰</span><span>{p.news}</span></div>}
+        {p.news && <div className="newsbox"><b>FPL news</b> · {p.news}</div>}
 
         <div className="kpis" style={{ marginTop: 12 }}>
           <div className="kpi"><div className="v num">{fmt(sum)}</div><div className="l">xP GW{from}–{to} ({inRange.length} fixtures)</div></div>
@@ -59,7 +60,9 @@ export default function PlayerDrawer({ id, onClose }: { id: number; onClose: () 
           </div>
         )}
 
-        <h3 style={{ marginTop: 18 }}>Fixtures</h3>
+        <RecentForm id={p.id} />
+
+        <h3 style={{ marginTop: 18 }}>Forecast fixtures</h3>
         <div className="grid" style={{ gap: 8 }}>
           {p.fixtures.map((f) => {
             const off = excluded.has(fixtureKey(p.id, f.fixture));
@@ -86,5 +89,62 @@ export default function PlayerDrawer({ id, onClose }: { id: number; onClose: () 
         <p className="faint" style={{ marginTop: 12 }}>All figures assume the player starts. Distributions come from 1,000 simulated matches per fixture.</p>
       </aside>
     </>
+  );
+}
+
+/** What actually happened in the player's last six team fixtures (appearances or not), plus the season so far. */
+function RecentForm({ id }: { id: number }) {
+  const { d } = useApp();
+  const { doc } = useStats();
+  const sp = doc?.players.find((x) => x.id === id);
+  if (!doc) return null;
+  if (!sp?.recent?.length) return <p className="faint" style={{ marginTop: 16 }}>No league minutes this season yet.</p>;
+  const t = sp.s.season;
+  const res = (m: RecentMatch) => {
+    if (!m.score) return "";
+    const [h, a] = m.score.split("-").map(Number);
+    const [f, ag] = m.home ? [h, a] : [a, h];
+    return `${f > ag ? "W" : f < ag ? "L" : "D"} ${f}-${ag}`;
+  };
+  const sum = (k: keyof RecentMatch) => sp.recent!.reduce((s, m) => s + (m[k] as number), 0);
+  return (
+    <div style={{ marginTop: 18 }}>
+      <h3>Recent matches</h3>
+      <p className="faint" style={{ margin: "0 0 6px", fontSize: 12 }}>
+        Season so far: {t.apps} apps · {t.mins} mins · {t.g} G · {t.a} A · {(t.uxg ?? 0).toFixed(2)} xG · {(t.uxa ?? 0).toFixed(2)} xA · {t.pts} pts
+      </p>
+      <div style={{ overflowX: "auto" }}>
+        <table className="plain" style={{ fontSize: 12.5 }}>
+          <thead><tr>
+            <th>GW</th><th>Opponent</th><th className="r" title="Minutes played">Min</th>
+            <th className="r" title="Goals">G</th><th className="r" title="Assists">A</th>
+            <th className="r" title="Expected goals (Understat)">xG</th><th className="r" title="Expected assists (Understat)">xA</th>
+            <th className="r" title="Shots">Sh</th><th className="r" title="Key passes: shots set up">KP</th>
+            <th className="r" title="Bonus points">B</th><th className="r" title="FPL points">Pts</th>
+          </tr></thead>
+          <tbody>
+            {sp.recent.map((m) => (
+              <tr key={m.gw + "-" + m.opp} style={{ opacity: m.mins === 0 ? 0.55 : 1 }}>
+                <td>{m.gw}</td>
+                <td>{m.home ? "" : "@ "}{d.teams.get(m.opp)?.short} <span className="faint">{res(m)}</span></td>
+                <td className="r">{m.mins === 0 ? "–" : m.start ? m.mins : <span title="came off the bench">{m.mins}*</span>}</td>
+                <td className="r">{m.g || ""}</td><td className="r">{m.a || ""}</td>
+                <td className="r">{m.mins ? m.xg.toFixed(2) : ""}</td><td className="r">{m.mins ? m.xa.toFixed(2) : ""}</td>
+                <td className="r">{m.mins ? m.shots : ""}</td><td className="r">{m.mins ? m.kp : ""}</td>
+                <td className="r">{m.bonus || ""}</td><td className="r"><b>{m.pts}</b></td>
+              </tr>
+            ))}
+            <tr style={{ borderTop: "1.5px solid var(--text)" }}>
+              <td colSpan={2} className="muted">Last {sp.recent.length}</td><td className="r">{sum("mins")}</td>
+              <td className="r">{sum("g")}</td><td className="r">{sum("a")}</td>
+              <td className="r">{sum("xg").toFixed(2)}</td><td className="r">{sum("xa").toFixed(2)}</td>
+              <td className="r">{sum("shots")}</td><td className="r">{sum("kp")}</td><td className="r">{sum("bonus")}</td>
+              <td className="r"><b>{sum("pts")}</b></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="faint" style={{ margin: "4px 0 0", fontSize: 11.5 }}>* came off the bench · – did not play. xG, xA, shots and key passes from Understat.</p>
+    </div>
   );
 }
