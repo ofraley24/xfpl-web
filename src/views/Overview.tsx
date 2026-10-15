@@ -108,9 +108,9 @@ export default function Overview() {
           <button className="btn small" style={{ marginTop: 8 }} onClick={() => go("planner")}>Open player analysis →</button>
         </div>
         <div className="panel">
-          <h3>Strongest matchups, GW{gw}–{to}</h3>
+          <h3>Teams to target, GW{gw}–{to}</h3>
           <table className="plain">
-            <thead><tr><th>Attack</th><th className="r">xG</th><th>Defence</th><th className="r">CS</th></tr></thead>
+            <thead><tr><th>Attack</th><th className="r">exp. goals</th><th>Defence</th><th className="r">exp. CS</th></tr></thead>
             <tbody>
               {[0, 1, 2, 3, 4].map((i) => {
                 const a = [...teams].sort((x, y) => y.xg - x.xg)[i], c = [...teams].sort((x, y) => y.cs - x.cs)[i];
@@ -118,7 +118,7 @@ export default function Overview() {
               })}
             </tbody>
           </table>
-          <div className="faint" style={{ fontSize: 11.5, marginTop: 6 }}>Expected goals scored and expected clean sheets over the next six gameweeks: each team's own strength and its opponents' combined.</div>
+          <div className="faint" style={{ fontSize: 11.5, marginTop: 6 }}>Projected goals and clean sheets over the next six gameweeks, from each team's strength against its opponents.</div>
           <button className="btn small" style={{ marginTop: 8 }} onClick={() => go("fixtures")}>Full fixture ticker →</button>
         </div>
       </section>
