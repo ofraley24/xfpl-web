@@ -20,8 +20,8 @@ export default function Overview() {
   const to = Math.min(d.gws[d.gws.length - 1], gw + 5);
   const starters = useMemo(() => d.players.filter((p) => p.fixtures.some((f) => f.gw === gw && f.xi) && (p.status === "a" || (p.chance_next ?? 0) >= 75)), [d, gw]);
   const gwXp = (p: Player) => p.fixtures.filter((f) => f.gw === gw && !excluded.has(fixtureKey(p.id, f.fixture))).reduce((s, f) => s + f.xp, 0);
-  const byPos = POSITIONS.map((pos) => ({ pos, top: starters.filter((p) => p.pos === pos).sort((a, b) => gwXp(b) - gwXp(a)).slice(0, 5) }));
-  const value = [...starters].map((p) => ({ p, v: rangeXp(p, gw, to, excluded) / p.price })).sort((a, b) => b.v - a.v).slice(0, 6);
+  const byPos = POSITIONS.map((pos) => ({ pos, top: starters.filter((p) => p.pos === pos).sort((a, b) => gwXp(b) - gwXp(a)).slice(0, 10) }));
+  const value = [...starters].map((p) => ({ p, v: rangeXp(p, gw, to, excluded) / p.price })).sort((a, b) => b.v - a.v).slice(0, 10);
   const teams = useMemo(() => {
     const t = new Map<number, { xg: number; cs: number; n: number }>();
     for (const f of d.fc.fixtures) {
@@ -57,8 +57,9 @@ export default function Overview() {
             <div key={pos} className="panel">
               <div className="row" style={{ justifyContent: "space-between", marginBottom: 6 }}><PosChip pos={pos} /><span className="metric-note">xP</span></div>
               <table className="plain"><tbody>
-                {top.map((p) => (
+                {top.map((p, i) => (
                   <tr key={p.id}>
+                    <td className="faint num" style={{ width: 18, paddingRight: 0 }}>{i + 1}</td>
                     <td><PlayerName p={p} /> <StatusChip p={p} /><div className="faint" style={{ fontSize: 11.5 }}><TeamShort id={p.team} /> · {opp(p)}</div></td>
                     <td className="r serif" style={{ fontSize: 18, fontWeight: 600 }}>{fmt(gwXp(p))}</td>
                   </tr>
@@ -89,8 +90,8 @@ export default function Overview() {
         <div className="panel">
           <h3>Best value, GW{gw}–{to}</h3>
           <table className="plain"><tbody>
-            {value.map(({ p, v }) => (
-              <tr key={p.id}><td><PosChip pos={p.pos} /> <PlayerName p={p} /><div className="faint" style={{ fontSize: 11.5 }}><TeamShort id={p.team} /> · £{fmt(p.price)}m</div></td>
+            {value.map(({ p, v }, i) => (
+              <tr key={p.id}><td className="faint num" style={{ width: 18, paddingRight: 0 }}>{i + 1}</td><td><PosChip pos={p.pos} /> <PlayerName p={p} /><div className="faint" style={{ fontSize: 11.5 }}><TeamShort id={p.team} /> · £{fmt(p.price)}m</div></td>
                 <td className="r"><b>{fmt(v, 2)}</b><div className="metric-note">xP per £m</div></td></tr>
             ))}
           </tbody></table>
@@ -99,11 +100,11 @@ export default function Overview() {
         <div className="panel">
           <h3>Teams to target, GW{gw}–{to}</h3>
           <table className="plain">
-            <thead><tr><th>Attack</th><th className="r">exp. goals</th><th>Defence</th><th className="r">exp. CS</th></tr></thead>
+            <thead><tr><th></th><th>Attack</th><th className="r">exp. goals</th><th>Defence</th><th className="r">exp. CS</th></tr></thead>
             <tbody>
-              {[0, 1, 2, 3, 4].map((i) => {
+              {Array.from({ length: 10 }, (_, i) => i).map((i) => {
                 const a = [...teams].sort((x, y) => y.xg - x.xg)[i], c = [...teams].sort((x, y) => y.cs - x.cs)[i];
-                return <tr key={i}><td>{d.teams.get(a.id)?.short}</td><td className="r">{fmt(a.xg)}</td><td>{d.teams.get(c.id)?.short}</td><td className="r">{fmt(c.cs, 1)}</td></tr>;
+                return <tr key={i}><td className="faint num" style={{ width: 18, paddingRight: 0 }}>{i + 1}</td><td>{d.teams.get(a.id)?.short}</td><td className="r">{fmt(a.xg)}</td><td>{d.teams.get(c.id)?.short}</td><td className="r">{fmt(c.cs, 1)}</td></tr>;
               })}
             </tbody>
           </table>
