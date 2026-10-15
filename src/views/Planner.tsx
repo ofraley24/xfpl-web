@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { fixtureKey, fixturesIn, fmt, pct, POSITIONS, useApp, useStored } from "../data";
 import type { Player, Pos } from "../types";
-import { heat, heatInk, PlayerName, PosChip, RangePicker, StatusChip, TeamShort } from "../ui";
+import { heat, heatInk, PlayerName, PosChip, RangePicker, StatusChip, TeamBadge, TeamShort } from "../ui";
+import { club } from "../teamColours";
 
 type SortKey = "xp" | "value" | "price" | "own" | "haul" | "perfx" | `gw${number}`;
 
@@ -12,6 +13,7 @@ export default function Planner() {
   const [maxPrice, setMaxPrice] = useStored<number>("pl:maxprice", 16);
   const [starters, setStarters] = useStored<boolean>("pl:starters", true);
   const [fit, setFit] = useStored<boolean>("pl:fit", false);
+  const [colours, setColours] = useStored<"off" | "stripe" | "tint">("pl:colours", "stripe");
   const [maxOwn, setMaxOwn] = useStored<number>("pl:maxown", 100);
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<{ k: SortKey; desc: boolean }>({ k: "xp", desc: true });
@@ -89,6 +91,9 @@ export default function Planner() {
           </label>
           <input type="text" placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
           <span className="muted">{rows.length} players</span>
+          <span className="spacer" />
+          <span className="muted" style={{ fontSize: 12.5 }}>Team colours</span>
+          <div className="seg">{(["off", "stripe", "tint"] as const).map((m) => <button key={m} className={colours === m ? "on" : ""} onClick={() => setColours(m)}>{m}</button>)}</div>
         </div>
       </div>
 
@@ -110,10 +115,12 @@ export default function Planner() {
           </thead>
           <tbody>
             {sorted.slice(0, limit).map(({ p, xp, value, haul, perfx }) => (
-              <tr key={p.id}>
-                <td><input type="checkbox" checked={compare.includes(p.id)} onChange={() => toggleCompare(p.id)} /></td>
+              <tr key={p.id} style={colours === "tint" ? { background: `color-mix(in srgb, ${club(d.teams.get(p.team)?.short).tint ?? club(d.teams.get(p.team)?.short).primary} 11%, transparent)` } : undefined}
+                className={colours === "stripe" ? "striped" : undefined}>
+                <td style={colours === "stripe" ? { boxShadow: `inset 4px 0 0 ${club(d.teams.get(p.team)?.short).primary}` } : undefined}>
+                  <input type="checkbox" checked={compare.includes(p.id)} onChange={() => toggleCompare(p.id)} /></td>
                 <td><div className="row" style={{ gap: 6 }}><PosChip pos={p.pos} /><PlayerName p={p} /><StatusChip p={p} /></div></td>
-                <td><TeamShort id={p.team} /></td>
+                <td>{colours === "off" ? <TeamShort id={p.team} /> : <TeamBadge id={p.team} />}</td>
                 <td className="r num">{fmt(p.price)}</td>
                 <td className="r num muted">{fmt(p.own)}%</td>
                 <td className="r num"><b>{fmt(xp)}</b></td>

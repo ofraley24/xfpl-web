@@ -2,6 +2,7 @@ import { Tooltip } from "./Tooltip";
 import { useMemo, useState } from "react";
 import { fmt, useApp } from "./data";
 import type { Player, Pos } from "./types";
+import { club } from "./teamColours";
 
 /** Sequential (one hue, light -> dark) background for an xP value on a lo..hi scale, with a readable ink. */
 export function heat(x: number, hi: number, lo = 2) {
@@ -170,4 +171,16 @@ export function placeLabels<T>(items: T[], pos: (t: T) => { x: number; y: number
     out.push({ item: it, x: right ? p.x + 6 : p.x - 8, y: p.y - 8, anchor: right ? "start" : "end" });
   }
   return out;
+}
+
+/** Two-tone club badge: primary fill, secondary edge. */
+export function TeamBadge({ id }: { id: number }) {
+  const { d } = useApp();
+  const short = d.teams.get(id)?.short;
+  const c = club(short);
+  return (
+    <span className="teambadge" style={{ background: c.primary, color: c.ink, boxShadow: `inset 0 -3px 0 ${c.secondary}` }} title={d.teams.get(id)?.name}>
+      {short ?? "?"}
+    </span>
+  );
 }
