@@ -1,6 +1,6 @@
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { go } from "../App";
 import { HorizonChart, PitChart, RatioChart, ReliabilityChart, ratioOf } from "../charts";
 import { useEvidence, type Acc, type EvidenceSet } from "../evidence";
@@ -23,6 +23,10 @@ const SECTIONS = [
 
 export default function Paper() {
   const { v: ev, err } = useEvidence();
+  useEffect(() => {
+    const sub = window.location.hash.split("/")[2];   // #/paper/<section id>
+    if (ev && sub) setTimeout(() => document.getElementById(sub)?.scrollIntoView({ behavior: "smooth" }), 60);
+  }, [ev]);
   if (err) return <div className="panel">The evidence file is missing ({err}).</div>;
   if (!ev) return <div className="muted">Loading…</div>;
   const { dev, sealed, live } = ev.sets;
@@ -68,7 +72,7 @@ export default function Paper() {
         match many times, and score each simulation with the season's rules. The scoring rules reproduce FPL's official totals from
         the recorded events in 100% of {dev.starts.toLocaleString()} development rows.</p>
       <Architecture />
-      <h3>Team strength</h3>
+      <h3 id="team-strength">Team strength</h3>
       <p>Each team has an attack and a defence rating, updated after every match from a blend of non-penalty expected goals and
         actual goals, so one fortunate result moves a rating less than its scoreline suggests. Expected goals for a fixture are
         log-linear in the rating gap:</p>
@@ -76,7 +80,7 @@ export default function Paper() {
       <p>Three terms are learned online from matches already played: home advantage behind closed doors (it roughly halved during
         COVID), and slow drifts in each league's scoring level and in crowd home advantage. Together they improve out-of-sample goal
         prediction significantly over fixed values. Ratings for a fixture are always taken as they stood at the deadline.</p>
-      <h3>Player talent</h3>
+      <h3 id="player-talent">Player talent</h3>
       <p>A player's attacking role is measured as their share of their team's output while they are on the pitch: shot share, shot quality,
         and expected-assist share, accumulated with time decay across all six leagues. Shares separate the player from their team,
         whose strength enters separately. Each share is shrunk toward the position average by an amount estimated from the data:</p>
@@ -84,7 +88,7 @@ export default function Paper() {
       <p>The two variances come from splitting every player-season into odd and even matches: two independent measurements of the
         same player, whose covariance is talent and whose difference is noise. This split-half empirical Bayes beat both a tuned
         fixed shrinkage and a likelihood-based hierarchical model.</p>
-      <h3>Scoring events</h3>
+      <h3 id="scoring-events">Scoring events</h3>
       <table className="plain">
         <thead><tr><th>Event</th><th>Model</th><th>Key structure</th></tr></thead>
         <tbody>

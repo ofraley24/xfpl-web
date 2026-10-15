@@ -5,6 +5,15 @@ import { useEvidence } from "../evidence";
 import type { Player } from "../types";
 import { PlayerName, PosChip, StatusChip, TeamShort } from "../ui";
 
+const PILLARS = [
+  { title: "Team strength that moves", anchor: "team-strength",
+    body: "Every club carries an attack and a defence rating, updated after each match from the chances it created and allowed, not just the scoreline. Home advantage and league scoring levels are learned as the seasons change." },
+  { title: "Talent, separated from the team", anchor: "player-talent",
+    body: "Each player is measured by their share of their team's attack — shots, shot quality, chances created — across six leagues, with lucky streaks filtered out statistically before they reach a forecast." },
+  { title: "Built from the bottom up", anchor: "scoring-events",
+    body: "Goals, assists, clean sheets, saves, cards, defensive work and bonus are each modelled on their own, then combined in a thousand simulated matches, where team-mates share clean sheets and compete for bonus as they do on the pitch." },
+];
+
 export default function Overview() {
   const { d, excluded } = useApp();
   const { v: ev } = useEvidence();
@@ -36,10 +45,23 @@ export default function Overview() {
       <header>
         <div className="kicker">Gameweek {gw} · deadline {deadline.toLocaleString(undefined, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</div>
         <h1>Expected points, measured honestly.</h1>
-        <p className="lede">Cutting-edge sports modelling, fitted on more than a decade of shot-level data from six European
-          leagues. Every goal, assist, clean sheet and bonus point is simulated a thousand times per fixture. Here is its view of
-          gameweek {gw}, and the evidence behind it.</p>
+        <p className="lede">Rather than fitting past points to past stats, xFPL models how points are actually scored: dynamic
+          team-strength ratings, player talent separated from team quality, and every goal, assist, clean sheet and bonus point
+          played out a thousand times per fixture, on more than a decade of shot-level data.</p>
       </header>
+
+      <section aria-label="How it's built">
+        <div className="three" style={{ gap: 22 }}>
+          {PILLARS.map((p, i) => (
+            <div key={p.title} className="pillar">
+              <div className="pillar-no">{String(i + 1).padStart(2, "0")}</div>
+              <h3>{p.title}</h3>
+              <p>{p.body}</p>
+              <a href={`#/paper/${p.anchor}`} className="pillar-link">How it works →</a>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {dev && sealed && (
         <section>

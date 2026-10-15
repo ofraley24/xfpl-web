@@ -231,3 +231,12 @@ main > .grid > .panel:first-child { background: none; border: 0; padding: 0 0 6p
 main > .grid > .panel:first-child h2 { font-size: 36px; line-height: 1.1; margin-bottom: 8px; }
 main > .grid > .panel:first-child .sub { font-family: var(--serif); font-size: 17px; line-height: 1.45; }
 @media (max-width: 1000px) { main > .grid > .panel:first-child h2 { font-size: 28px; } }
+
+/* ---- overview: how it's built */
+.pillar { border-top: 1px solid var(--line-strong); padding-top: 12px; }
+.pillar-no { font-family: var(--serif); font-size: 13px; color: var(--accent); font-weight: 600; letter-spacing: .04em; margin-bottom: 4px; }
+.pillar h3 { font-size: 20px; margin-bottom: 6px; }
+.pillar p { margin: 0 0 8px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.pillar-link { font-size: 13px; font-weight: 600; text-decoration: none; }
+.pillar-link:hover { text-decoration: underline; }
+.article h2, .article h3 { scroll-margin-top: 70px; }
