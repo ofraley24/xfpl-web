@@ -243,3 +243,5 @@ main > .grid > .panel:first-child .sub { font-family: var(--serif); font-size: 1
 .newsbox { margin-top: 10px; background: var(--panel-2); border-left: 3px solid var(--gold); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
 .newsbox b { color: var(--text); }
 .teambadge { display: inline-block; min-width: 38px; text-align: center; padding: 1px 6px 3px; border-radius: 5px; font-size: 10.5px; font-weight: 750; letter-spacing: .04em; line-height: 15px; }
+a.btn { display: inline-block; text-decoration: none; color: var(--text); }
+a.btn.primary { color: var(--accent-ink); }

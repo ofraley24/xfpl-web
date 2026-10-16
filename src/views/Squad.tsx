@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { BUDGET, fmt, POSITIONS, rangeXp, SQUAD_SHAPE, useApp } from "../data";
+import { FPL_PICK_TEAM_URL, FPL_TRANSFERS_URL, importTeam, type ImportedTeam } from "../fplTeam";
+import { BUDGET, fmt, gwXp, POSITIONS, rangeXp, SQUAD_SHAPE, useApp, useStored } from "../data";
 import { bestLineup, squadProblems, type GwLineup } from "../squad";
 import type { Player } from "../types";
 import { PlayerName, PlayerSearch, PosChip, RangePicker, StatusChip, TeamShort } from "../ui";
@@ -15,6 +16,7 @@ export default function Squad() {
   const cost = squad.reduce((s, p) => s + p.price, 0);
   const problems = squadProblems(squad, bank);
   const full = squad.length === 15;
+  const [imported, setImported] = useStored<ImportedTeam | null>("fpl:import", null);
 
   const add = (p: Player) => {
     if (ids.includes(p.id)) return;
@@ -29,7 +31,7 @@ export default function Squad() {
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div>
             <h2>My squad</h2>
-            <p className="sub">Build your 15 (or load one from the Dream team tab). Each gameweek the best XI and captain are picked automatically.</p>
+            <p className="sub">Import your FPL team, build one, or load the Dream team. Each gameweek the best XI and captain are picked automatically.</p>
           </div>
           <RangePicker />
         </div>
@@ -46,6 +48,8 @@ export default function Squad() {
           </div>
         </div>
       </div>
+
+      <ImportPanel imported={imported} setImported={setImported} />
 
       <div className="two">
         <div className="panel">
@@ -92,6 +96,7 @@ export default function Squad() {
         </div>
       </div>
 
+      {imported && full && <PlanCard imported={imported} squad={squad} lineups={lineups} />}
       {full && <ChipPlanner lineups={lineups} />}
       {full && <TransferFinder squad={squad} />}
     </div>
@@ -219,6 +224,116 @@ function ChipPlanner({ lineups }: { lineups: GwLineup[] }) {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+/** Import an FPL team by its public id (read-only, as of the last deadline). */
+function ImportPanel({ imported, setImported }: { imported: ImportedTeam | null; setImported: (t: ImportedTeam | null) => void }) {
+  const { d, setSquad, setBank } = useApp();
+  const [id, setId] = useState(imported ? String(imported.teamId) : "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const run = async () => {
+    const n = Number(id.trim());
+    if (!Number.isInteger(n) || n <= 0) { setErr("A team id is a whole number, e.g. 1234567"); return; }
+    setBusy(true); setErr(null);
+    try {
+      const t = await importTeam(n, new Set(d.byId.keys()));
+      setImported(t);
+      setSquad(t.squad);
+      // budget = what the squad costs now + the money in the bank (selling prices are private, so current prices are used)
+      const cost = t.squad.reduce((s, pid) => s + (d.byId.get(pid)?.price ?? 0), 0);
+      setBank(Math.round((cost + t.bankFpl - BUDGET) * 10) / 10);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const names = (ids: number[]) => ids.map((x) => d.byId.get(x)?.name ?? `#${x}`).join(", ");
+  return (
+    <div className="panel">
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <h3 style={{ margin: 0 }}>Import from FPL</h3>
+        <span className="metric-note">read-only · no password needed</span>
+      </div>
+      <div className="row" style={{ marginTop: 8 }}>
+        <input type="text" inputMode="numeric" placeholder="Your FPL team id" value={id} onChange={(e) => setId(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && run()} style={{ width: 170 }} />
+        <button className="btn primary" onClick={run} disabled={busy}>{busy ? "Importing…" : imported ? "Re-import" : "Import my team"}</button>
+        {imported && <button className="btn small" onClick={() => setImported(null)}>forget</button>}
+        {err && <span style={{ color: "var(--bad)" }}>{err}</span>}
+      </div>
+      {imported ? (
+        <p className="sub" style={{ margin: "8px 0 0", fontSize: 13 }}>
+          <b>{imported.name}</b> ({imported.manager}) · squad as of the GW{imported.gw} deadline · £{fmt(imported.bankFpl)}m in the bank ·
+          team value £{fmt(imported.valueFpl)}m{imported.chip ? ` · ${imported.chip} played` : ""}.
+          {imported.missing.length > 0 && <> Not in this forecast: {names(imported.missing)}.</>}
+          {" "}Transfers you have made since that deadline are private to your FPL account, so make them here too.
+        </p>
+      ) : (
+        <p className="faint" style={{ margin: "8px 0 0", fontSize: 12.5 }}>Your team id is the number in the address of your FPL
+          Points page: fantasy.premierleague.com/entry/<b>1234567</b>/event/… The import reads the public team page only.</p>
+      )}
+    </div>
+  );
+}
+
+/** The changes to make on FPL: transfers versus the imported squad, the hit, and next gameweek's captain and bench. */
+function PlanCard({ imported, squad, lineups }: { imported: ImportedTeam; squad: Player[]; lineups: GwLineup[] }) {
+  const { d, excluded } = useApp();
+  const [free, setFree] = useStored<number>("fpl:free", 1);
+  const now = new Set(squad.map((p) => p.id)), before = new Set(imported.squad);
+  const outs = imported.squad.filter((x) => !now.has(x)).map((x) => d.byId.get(x)).filter((p): p is Player => !!p);
+  const ins = squad.filter((p) => !before.has(p.id));
+  const hit = Math.max(0, ins.length - free) * 4;
+  const baseSquad = imported.squad.map((x) => d.byId.get(x)).filter((p): p is Player => !!p);
+  const gain = useMemo(() => lineups.reduce((s, l) => s + l.points, 0) - lineups.reduce((s, l) => s + bestLineup(baseSquad, l.gw, excluded).points, 0),
+    [lineups, baseSquad, excluded]); // eslint-disable-line
+  const next = lineups[0];
+  const byXp = next ? [...next.xi].sort((a, b) => gwXp(b, next.gw, excluded) - gwXp(a, next.gw, excluded)) : [];
+  const vice = byXp.find((p) => p.id !== next?.captain?.id);
+  const bench = next ? [...next.bench.filter((p) => p.pos === "GKP"), ...next.bench.filter((p) => p.pos !== "GKP").sort((a, b) => gwXp(b, next.gw, excluded) - gwXp(a, next.gw, excluded))] : [];
+  return (
+    <div className="panel">
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <h3 style={{ margin: 0 }}>Make these changes on FPL</h3>
+        <span className="metric-note">compared with your GW{imported.gw} squad</span>
+      </div>
+      <div className="two" style={{ marginTop: 10 }}>
+        <div>
+          {ins.length === 0 ? <p className="muted" style={{ margin: 0 }}>No transfers: your squad matches the imported one.</p> : (
+            <table className="plain">
+              <thead><tr><th>Out</th><th>In</th></tr></thead>
+              <tbody>{ins.map((p, i) => (
+                <tr key={p.id}><td>{outs[i] ? <><PosChip pos={outs[i].pos} /> {outs[i].name} <span className="faint"><TeamShort id={outs[i].team} /></span></> : ""}</td>
+                  <td><PosChip pos={p.pos} /> <b>{p.name}</b> <span className="faint"><TeamShort id={p.team} /></span></td></tr>
+              ))}</tbody>
+            </table>
+          )}
+          <div className="row" style={{ marginTop: 10, gap: 8 }}>
+            <span className="muted">Free transfers</span>
+            <div className="seg">{[1, 2, 3, 4, 5].map((n) => <button key={n} className={free === n ? "on" : ""} onClick={() => setFree(n)}>{n}</button>)}</div>
+          </div>
+          <p className="faint" style={{ fontSize: 12, margin: "4px 0 0" }}>FPL doesn't publish free transfers, so set yours.</p>
+        </div>
+        <div className="kpis" style={{ alignContent: "start" }}>
+          <div className="kpi"><div className="v num">{ins.length}</div><div className="l">transfer{ins.length === 1 ? "" : "s"}{hit ? ` · −${hit} pts hit` : ""}</div></div>
+          <div className="kpi"><div className="v num" style={{ color: gain - hit > 0 ? "var(--accent)" : gain - hit < 0 ? "var(--bad)" : undefined }}>{gain - hit >= 0 ? "+" : "−"}{fmt(Math.abs(gain - hit))}</div>
+            <div className="l">expected points GW{lineups[0]?.gw}–{lineups[lineups.length - 1]?.gw} after the hit (best XI + captain each week)</div></div>
+        </div>
+      </div>
+      {next && (
+        <p style={{ margin: "12px 0 0" }}>
+          <b>GW{next.gw}:</b> captain <b>{next.captain?.name}</b>, vice <b>{vice?.name}</b> · bench order {bench.map((p) => p.name).join(", ")}
+        </p>
+      )}
+      <div className="row" style={{ marginTop: 12 }}>
+        <a className="btn primary" href={FPL_TRANSFERS_URL} target="_blank" rel="noopener noreferrer">Open FPL transfers ↗</a>
+        <a className="btn" href={FPL_PICK_TEAM_URL} target="_blank" rel="noopener noreferrer">Open FPL pick team ↗</a>
+        <span className="faint" style={{ fontSize: 12.5 }}>Changes are made on FPL itself; this site never asks for your password.</span>
       </div>
     </div>
   );
