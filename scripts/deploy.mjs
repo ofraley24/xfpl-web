@@ -1,13 +1,13 @@
 // Build the site and upload dist/ to Cloudflare Pages (direct upload; data never goes through git).
-// The site is personal-use only, so this refuses to deploy unless the live URL is behind Cloudflare Access
-// (it must redirect to <team>.cloudflareaccess.com). Pass --allow-public to skip that check.
+// The site is public (owner's decision, 2026-10-18; public/_headers sets noindex). Pass --require-access to refuse
+// unless the live URL redirects to Cloudflare Access (<team>.cloudflareaccess.com), e.g. if it is made private again.
 // --force keeps wrangler on classic Pages (it otherwise may deploy a public Worker instead, as on 2026-10-15).
 // Env: XFPL_PAGES_PROJECT (default "xfpl"), XFPL_SITE_URL (default https://<project>.pages.dev).
 import { execFileSync } from "node:child_process";
 
 const project = process.env.XFPL_PAGES_PROJECT ?? "xfpl";
 const siteUrl = process.env.XFPL_SITE_URL ?? `https://${project}.pages.dev`;
-const allowPublic = process.argv.includes("--allow-public");
+const requireAccess = process.argv.includes("--require-access");
 
 async function behindAccess(url) {
   try {
@@ -20,8 +20,8 @@ async function behindAccess(url) {
   }
 }
 
-if (!allowPublic && !(await behindAccess(siteUrl))) {
-  console.error(`deploy: ${siteUrl} is not behind Cloudflare Access; refusing to deploy (use --allow-public to override)`);
+if (requireAccess && !(await behindAccess(siteUrl))) {
+  console.error(`deploy: ${siteUrl} is not behind Cloudflare Access; refusing to deploy (--require-access)`);
   process.exit(2);
 }
 
