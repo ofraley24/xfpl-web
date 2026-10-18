@@ -3,7 +3,7 @@ import "katex/dist/katex.min.css";
 import { useEffect, useMemo } from "react";
 import { go } from "../App";
 import { HorizonChart, PitChart, RatioChart, ReliabilityChart, ratioOf } from "../charts";
-import { useEvidence, type Acc, type EvidenceSet } from "../evidence";
+import { useEvidence, type Acc, type AvailabilityEvidence, type EvidenceSet, type FullEvidence } from "../evidence";
 
 const Eq = ({ tex }: { tex: string }) => {
   const html = useMemo(() => katex.renderToString(tex, { displayMode: true, throwOnError: false }), [tex]);
@@ -17,9 +17,13 @@ const SECTIONS = [
   ["testing", "How it was tested"],
   ["results", "Results"],
   ["ahead", "Forecasting weeks ahead"],
+  ["plays", "Who plays: availability and the full model"],
   ["benchmark", "What about FPL's own projections?"],
   ["limits", "Limitations"],
 ] as const;
+
+const SECTION_IDS = (ev: { availability?: unknown; full?: unknown }) =>
+  SECTIONS.filter(([id]) => id !== "plays" || (ev.availability && ev.full));
 
 export default function Paper() {
   const { v: ev, err } = useEvidence();
@@ -30,7 +34,8 @@ export default function Paper() {
   if (err) return <div className="panel">The evidence file is missing ({err}).</div>;
   if (!ev) return <div className="muted">Loading…</div>;
   const { dev, sealed, live } = ev.sets;
-  const H = (i: number) => <span className="no">{i + 1}</span>;
+  const secs = SECTION_IDS(ev);
+  const H = (id: string) => <span className="no">{secs.findIndex(([k]) => k === id) + 1}</span>;
   return (
     <article className="article">
       <div className="kicker">Method · condensed paper</div>
@@ -47,15 +52,19 @@ export default function Paper() {
           (within-gameweek rank correlation {dev.accuracy.model.rank.toFixed(2)} against {dev.accuracy.pps5.rank.toFixed(2)} in development),
           lowers RMSE by about 10%, and is calibrated to within 1.3% overall. Its predictive distributions are honest: the central
           80% contains {pct(dev.pit.c80)} of outcomes. All 15 leakage-audit tests pass. Forecasts made up to eight gameweeks ahead
-          are almost as accurate as next-week forecasts.</p>
+          are almost as accurate as next-week forecasts.{ev.full && <> A separate availability model gives each player's chance of starting
+          or coming off the bench; weighted by it, the full expectation is calibrated to within {pct(Math.abs(1 - ev.full.overall.ratio), 1)} over
+          all {ev.full.rows.toLocaleString()} development player-fixtures.</>}</p>
       </div>
       <nav className="toc" aria-label="Contents">
-        {SECTIONS.map(([id, t], i) => <a key={id} href={`#/paper`} onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); }}>{i + 1}. {t}</a>)}
+        {secs.map(([id, t], i) => <a key={id} href={`#/paper`} onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); }}>{i + 1}. {t}</a>)}
       </nav>
 
-      <h2 id="question">{H(0)}The question and the rules</h2>
+      <h2 id="question">{H("question")}The question and the rules</h2>
       <p>The target is the number of FPL points a player scores in a fixture <i>given that they start</i>. Whether a player starts is a
-        separate question — team news, rotation, injuries — that managers judge for themselves; the model answers what a start is worth.</p>
+        separate question — team news, rotation, injuries — that managers judge for themselves; the model answers what a start is worth.
+        {secs.some(([k]) => k === "plays") && <>A second, separate model estimates that chance from deadline information
+        (Section {secs.findIndex(([k]) => k === "plays") + 1}), and the site can show either figure.</>}</p>
       <p><b>Decision time is the deadline.</b> Every input is computed from records dated strictly before the gameweek deadline.
         That rule removed two subtle leaks during development: a double gameweek's first fixture informing its second, and matches
         kicking off simultaneously informing each other through shared league terms. Prices and ownership are taken from the previous
@@ -67,7 +76,7 @@ export default function Paper() {
         fitted only on earlier seasons. 2025-26 was held out, and 2026-27's first gameweeks were held out until late in development.
         Changes to the model were judged by rules written down before each run.</p>
 
-      <h2 id="model">{H(1)}How the model works</h2>
+      <h2 id="model">{H("model")}How the model works</h2>
       <p>Points are a deterministic function of match events, so the model is built bottom-up: estimate each event, simulate the
         match many times, and score each simulation with the season's rules. The scoring rules reproduce FPL's official totals from
         the recorded events in 100% of {dev.starts.toLocaleString()} development rows.</p>
@@ -115,7 +124,7 @@ export default function Paper() {
         pass through a calibration curve fitted only on earlier seasons' out-of-sample forecasts, which corrects a slight
         over-confidence at the extremes.</p>
 
-      <h2 id="testing">{H(2)}How it was tested</h2>
+      <h2 id="testing">{H("testing")}How it was tested</h2>
       <p>Each development season is predicted by a model fitted only on the seasons before it, and every number below is out of
         sample. A separate audit recomputes the features of randomly chosen predictions from raw records dated before the deadline
         and checks that they match exactly; it also checks that no single feature predicts the outcome suspiciously well, that every
@@ -126,7 +135,7 @@ export default function Paper() {
         a clean-sheet drift correction, a joint match simulation, a regression on the bonus point system, and season-specific bonus
         rules.</p>
 
-      <h2 id="results">{H(3)}Results</h2>
+      <h2 id="results">{H("results")}Results</h2>
       <p>The fair comparison for a forecast of a starting player is <b>points per start</b> over their last five starts; a form
         baseline (points in the last five fixtures) is weaker still.</p>
       <AccuracyTable sets={[dev, sealed, live]} />
@@ -162,7 +171,7 @@ export default function Paper() {
           50% held {pct(dev.pit.c50)} of outcomes and the central 80% held {pct(dev.pit.c80)} (2025-26: {pct(sealed.pit.c50)} and {pct(sealed.pit.c80)}).</figcaption>
       </figure>
 
-      <h2 id="ahead">{H(4)}Forecasting weeks ahead</h2>
+      <h2 id="ahead">{H("ahead")}Forecasting weeks ahead</h2>
       <p>Transfers are planned weeks ahead, so every gameweek from 2019-20 to 2025-26 was re-forecast from 1 to 8 gameweeks before
         it, with player features and team ratings frozen at the earlier deadline. The decision rule was fixed before scoring.</p>
       <div className="two" style={{ fontFamily: "var(--sans)" }}>
@@ -180,7 +189,9 @@ export default function Paper() {
         single match's points are lumpy and skewed. The site therefore shows multi-week sums without ranges until intervals built
         from the simulated distributions are validated.</p>
 
-      <h2 id="benchmark">{H(5)}What about FPL's own projections?</h2>
+      {ev.availability && ev.full && <WhoPlays a={ev.availability} f={ev.full} H={H("plays")} ahead={secs.findIndex(([k]) => k === "ahead") + 1} />}
+
+      <h2 id="benchmark">{H("benchmark")}What about FPL's own projections?</h2>
       <p>The archived FPL expected-points field looks far stronger than any pre-deadline forecast — but it is not one. Regressing it on
         our forecast and on the player's actual points shows it depends strongly on the points of the very match it claims to
         forecast, and hardly at all on the next one. The archived value was evidently recorded after the match, so it cannot be used
@@ -189,9 +200,14 @@ export default function Paper() {
         gameweek 7 every locked forecast is scored against FPL's projection taken at the same moment, and against its last projection
         before the deadline. <a href="#/record" onClick={() => go("record")}>See the live track record.</a></p>
 
-      <h2 id="limits">{H(6)}Limitations</h2>
+      <h2 id="limits">{H("limits")}Limitations</h2>
       <ul>
-        <li><b>Starting is given.</b> xP assumes the player starts; picking a team needs your judgement on who will. Substitute appearances are not modelled.</li>
+        <li><b>Starting is given by default.</b> xP assumes the player starts. The full model weights it by the chance of starting or
+          coming on, but it sees no team news or press conferences, and FPL's injury flags are applied by a rule of thumb because no
+          history of the flags exists to fit them on.</li>
+        <li><b>Substitute appearances</b> reuse the starters' simulation with shorter minutes, and those minutes are predicted
+          about 2–4 minutes too long. From 2022-23 the fifth of players least likely to start scored 20–25% less than the full
+          model predicted (small absolute values).</li>
         <li><b>The very top in 2025-26.</b> The highest-ranked players were over-predicted by about 6.5%, mostly in goals.</li>
         <li><b>Bonus rule changes</b> reach the model only as new seasons accumulate; forwards' bonus is under-predicted by 5–10% in some seasons.</li>
         <li><b>Clean sheets drifted</b> in 2023-24 and 2024-25, a league-wide change no earlier data predicted.</li>
@@ -262,5 +278,72 @@ function Architecture() {
       <figcaption><b>Figure 0. Architecture.</b> Team strength, player talent and minutes are estimated separately and meet only
         inside the simulation, where events are drawn, bonus is ranked given the events, and points are scored.</figcaption>
     </figure>
+  );
+}
+
+/** Section: the availability model and the full expectation (development seasons unless stated). */
+function WhoPlays({ a, f, H, ahead }: { a: AvailabilityEvidence; f: FullEvidence; H: React.ReactNode; ahead: number }) {
+  const gain = a.seasons.map((s) => 1 - s.ll_model / s.ll_base);
+  const dev = a.seasons.filter((s) => s.set === "dev");
+  const h8 = a.horizon[a.horizon.length - 1];
+  const low = f.deciles.slice(0, 3);
+  const mins = f.sub_by_season.map((s) => s.min_pred - s.min_obs);
+  const r3 = (x: number) => x.toFixed(3);
+  return (
+    <>
+      <h2 id="plays">{H}Who plays: availability and the full model</h2>
+      <p>For each player and fixture a multinomial model gives three probabilities at the deadline: he starts, he comes off the
+        bench, or he does not play. Its inputs are the same deadline-dated records as the points model: recent starts and
+        minutes, squad position, price and ownership. Fitted walk-forward like everything else, it lowered log loss against a
+        baseline of each player's recent starting share by {pct(Math.min(...gain))}–{pct(Math.max(...gain))} in every season
+        from 2019-20 to 2026-27, and its mean predicted share of starts was within {(100 * Math.max(...dev.map((s) => Math.abs(s.pred_start - s.obs_start)))).toFixed(1)} percentage
+        points of the observed share in every development season.</p>
+      <figure className="fig">
+        <ReliabilityChart axis={{ x: "predicted chance (mean of decile)", y: "observed share (mean of decile)", unit: "player-fixtures", digits: 3, lo: 0, hi: 1 }}
+          sets={[{ key: "start", label: "Starts", data: a.rel_start, color: "var(--series-1)" }, { key: "sub", label: "Substitute appearances", data: a.rel_sub, color: "var(--series-2)" }]} />
+        <figcaption><b>Figure 6. Availability is calibrated.</b> Development player-fixtures ({a.rows.toLocaleString()}) in ten
+          groups by predicted chance of starting, and of coming on; each dot is the group's observed share.</figcaption>
+      </figure>
+      <p>Weeks ahead, the chance of starting is less certain: the same frozen-features backtest as Section {ahead} showed raw
+        probabilities too confident beyond one gameweek, so they are recalibrated for each horizon on earlier seasons' out-of-sample forecasts only. After that the
+        mean chance of starting still runs slightly high far ahead ({r3(h8.pred_start)} predicted against {r3(h8.obs_start)} observed
+        eight gameweeks out).</p>
+      <p><b>The full expectation</b> combines the two models: <i>P</i>(start) × xP if he starts + <i>P</i>(sub) × xP if he comes on.
+        Points as a substitute reuse the starters' simulation with the substitute-minutes distribution of the player's position.
+        Scored on every player who played in his previous ten fixtures ({f.rows.toLocaleString()} player-fixtures, {f.seasons[0]} to {f.seasons[f.seasons.length - 1]}),
+        actual points were {r3(f.overall.ratio)} of predicted (95%: {r3(f.overall.lo ?? NaN)}–{r3(f.overall.hi ?? NaN)}); substitutes
+        alone, {r3(f.sub.ratio)} over {f.sub.n.toLocaleString()} appearances.</p>
+      <figure className="fig">
+        <RatioChart lo={0.8} hi={1.2} rows={[
+          ...f.by_season.map((s) => ({ label: s.season, series: [{ name: "Full model", color: "var(--series-1)", ...ratioOf(s) }] })),
+          ...f.by_position.map((s) => ({ label: s.pos, series: [{ name: "Full model", color: "var(--series-1)", ...ratioOf(s) }] })),
+        ]} />
+        <figcaption><b>Figure 7. The full model, by season and position.</b> Actual divided by predicted points with 95% intervals
+          (resampling whole matches). Defenders and goalkeepers are over-predicted, mostly from 2022-23, consistent with the clean-sheet drift
+          seen in the start-conditional model.</figcaption>
+      </figure>
+      <figure className="fig" style={{ overflowX: "auto" }}>
+        <table className="plain">
+          <thead><tr><th>Method</th><th className="r">RMSE ↓</th><th className="r">Rank correlation ↑</th><th className="r">Top 10 actual pts ↑</th></tr></thead>
+          <tbody>
+            {([["Full model", f.accuracy.model, true], ["Form (last 5 fixtures)", f.accuracy.form5, false]] as const).map(([n, x, ours]) => (
+              <tr key={n} className={ours ? "ours" : ""}><td>{n}</td><td className="r">{x.rmse.toFixed(3)}</td><td className="r">{x.rank.toFixed(3)}</td><td className="r">{x.top10.toFixed(2)}</td></tr>))}
+          </tbody>
+        </table>
+        <figcaption><b>Table 2. Ranking every player, starters or not.</b> Same measures as Table 1, over all development
+          player-fixtures in the scored set. Points per start is not a fair comparison here because it ignores who plays.</figcaption>
+      </figure>
+      <figure className="fig">
+        <PitChart hist={f.pit.hist} color="var(--series-1)" />
+        <figcaption><b>Figure 8. The full distribution is honest too.</b> The mixture of the start, substitute and no-appearance
+          distributions: its central 50% held {pct(f.pit.c50)} of outcomes and its central 80% held {pct(f.pit.c80)}.</figcaption>
+      </figure>
+      <p>Two errors remain, and one gap. Substitute minutes are predicted {Math.min(...mins).toFixed(1)}–{Math.max(...mins).toFixed(1)} minutes too
+        long in every season ({f.sub.min_pred.toFixed(1)} against {f.sub.min_obs.toFixed(1)}). Players least likely to start
+        (mean chance {pct(low[0].p_start)}–{pct(low[low.length - 1].p_start)}) are over-predicted by {pct(1 - Math.max(...low.map((d) => d.obs / d.pred)))}–{pct(1 - Math.min(...low.map((d) => d.obs / d.pred)))} overall,
+        concentrated from 2022-23, when five substitutes became the rule and fewer seasons were available to learn from. The gap: the
+        backtest has no FPL injury flags, which did not exist as a history; the live forecast applies them by a rule of thumb, so
+        the live full model has no direct test yet.</p>
+    </>
   );
 }

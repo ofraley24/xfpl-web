@@ -1,13 +1,13 @@
 import { Tooltip } from "../Tooltip";
 import { useMemo, useState } from "react";
-import { fixturesIn, fmt, pct, POSITIONS, useApp, useStored } from "../data";
+import { fixturesIn, fmt, pct, POSITIONS, useApp, useStored, XP_LABEL } from "../data";
 import type { Player, Pos } from "../types";
 import { placeLabels, POS_SHAPE, PosMarker, RangePicker } from "../ui";
 
 type YKey = "xp" | "value" | "haul";
 
 export default function Scatter() {
-  const { d, from, to, excluded, openPlayer } = useApp();
+  const { d, from, to, excluded, openPlayer, mode } = useApp();
   const [y, setY] = useStored<YKey>("sc:y", "xp");
   const [show, setShow] = useStored<Pos[]>("sc:pos", ["DEF", "MID", "FWD"]);
   const [hover, setHover] = useState<{ p: Player; x: number; y: number; v: number; h: number } | null>(null);
@@ -28,7 +28,7 @@ export default function Scatter() {
   const sx = (v: number) => M.l + ((v - x0) / (x1 - x0)) * (W - M.l - M.r);
   const sy = (v: number) => H - M.b - ((v - y0) / (y1 - y0)) * (H - M.t - M.b);
   const yTicks = Array.from({ length: 6 }, (_, i) => y0 + (i * (y1 - y0)) / 5);
-  const label = { xp: `xP GW${from}–${to}`, value: "xP per £m", haul: "chance of a 10+ haul" }[y];
+  const label = { xp: `xP GW${from}–${to} · ${XP_LABEL[mode]}`, value: `xP per £m · ${XP_LABEL[mode]}`, haul: "chance of a 10+ haul" }[y];
   // label the standouts: best in each position on the chosen axis
   const stars = new Set(POSITIONS.flatMap((pos) => pts.filter((r) => r.p.pos === pos).sort((a, b) => b[y] - a[y]).slice(0, 4).map((r) => r.p.id)));
 

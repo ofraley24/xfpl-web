@@ -12,10 +12,33 @@ export interface EvidenceSet {
   components: { name: string; pred: number; obs: number; ratio: number }[];
   high_end: Record<"top5" | "top10" | "top20" | "top40" | "all", Ratio>;
 }
+export interface Decile { pred: number; obs: number; n: number }
+// Availability model (xFPL/analysis/30_availability.py): P(start), P(sub), P(no appearance) at the deadline.
+export interface AvailabilityEvidence {
+  rows: number;
+  seasons: { season: string; set: "dev" | "sealed" | "live"; n: number; ll_model: number; ll_base: number; obs_start: number; pred_start: number; obs_sub: number; pred_sub: number }[];
+  rel_start: Decile[];
+  rel_sub: Decile[];
+  horizon: { h: number; n: number; obs_start: number; pred_start: number; ll_raw: number; ll_recal: number }[];
+}
+// The full model, P(start) x xP|start + P(sub) x xP|sub (xFPL/analysis/31_full_xp.py), development seasons.
+export interface FullEvidence {
+  rows: number; seasons: string[];
+  overall: Ratio;
+  by_season: (Ratio & { season: string })[];
+  by_position: (Ratio & { pos: string })[];
+  deciles: { p_start: number; pred: number; obs: number; n: number }[];
+  accuracy: { model: Acc; form5: Acc };
+  pit: { hist: number[]; c50: number; c80: number };
+  sub: { n: number; ratio: number; min_pred: number; min_obs: number };
+  sub_by_season: { season: string; min_pred: number; min_obs: number }[];
+}
 export interface Evidence {
   generated_utc: string;
   sets: Record<"dev" | "sealed" | "live", EvidenceSet>;
   horizon: { h: number; bias: number; mae: number; rank: number; cover80: number }[];
+  availability?: AvailabilityEvidence; // absent in evidence files written before 2026-10-18
+  full?: FullEvidence;
 }
 export interface TrackMetrics { bias: number; mae: number; rmse: number; rank: number; top10: number; ratio: number }
 export interface TrackGw { gw: number; n: number; forecast_snapshot: string; deadline_snapshot: string; model: TrackMetrics; fpl_same: TrackMetrics; fpl_deadline: TrackMetrics }

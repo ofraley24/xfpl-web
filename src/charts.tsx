@@ -1,7 +1,7 @@
 import { Tooltip } from "./Tooltip";
 // Figures for the method pages. Thin marks, recessive axes, direct labels, a hover layer on every mark.
 import { useState, type ReactNode } from "react";
-import type { EvidenceSet, Ratio } from "./evidence";
+import type { Ratio } from "./evidence";
 
 type Tip = { x: number; y: number; body: ReactNode } | null;
 function useTip() {
@@ -21,12 +21,18 @@ function ticks(lo: number, hi: number, n = 5) {
   return out;
 }
 
-/** Reliability: mean actual points against mean predicted xP per quantile bin, with 95% intervals. */
-export function ReliabilityChart({ sets }: { sets: { key: string; label: string; data: EvidenceSet["reliability"]; color: string }[] }) {
+type Bin = { pred: number; obs: number; lo?: number; hi?: number; n: number };
+/** Reliability: mean actual against mean predicted per quantile bin, with 95% intervals when given.
+ *  Defaults are for xP per start; `axis` relabels it (e.g. for probabilities on 0-1). */
+export function ReliabilityChart({ sets, axis }: {
+  sets: { key: string; label: string; data: Bin[]; color: string }[];
+  axis?: { x: string; y: string; unit: string; digits: number; lo: number; hi: number };
+}) {
   const t = useTip();
   const W = 520, H = 360, M = { l: 46, r: 14, t: 12, b: 40 };
-  const all = sets.flatMap((s) => s.data.flatMap((b) => [b.pred, b.lo, b.hi]));
-  const lo = Math.floor(Math.min(...all)), hi = Math.ceil(Math.max(...all));
+  const all = sets.flatMap((s) => s.data.flatMap((b) => [b.pred, b.lo ?? b.obs, b.hi ?? b.obs]));
+  const lo = axis?.lo ?? Math.floor(Math.min(...all)), hi = axis?.hi ?? Math.ceil(Math.max(...all));
+  const d = axis?.digits ?? 2;
   const sx = (v: number) => M.l + ((v - lo) / (hi - lo)) * (W - M.l - M.r);
   const sy = (v: number) => H - M.b - ((v - lo) / (hi - lo)) * (H - M.t - M.b);
   const tk = ticks(lo, hi, 6);
@@ -37,13 +43,13 @@ export function ReliabilityChart({ sets }: { sets: { key: string; label: string;
           <text x={M.l - 6} y={sy(v) + 4} textAnchor="end">{v}</text><text x={sx(v)} y={H - M.b + 16} textAnchor="middle">{v}</text></g>)}
         <line x1={sx(lo)} y1={sy(lo)} x2={sx(hi)} y2={sy(hi)} stroke="var(--faint)" strokeDasharray="5 4" />
         <text x={sx(hi) - 4} y={sy(hi) + 14} textAnchor="end">actual = predicted</text>
-        <text x={(M.l + W - M.r) / 2} y={H - 6} textAnchor="middle">predicted xP (mean of bin)</text>
-        <text x={12} y={(M.t + H - M.b) / 2} textAnchor="middle" transform={`rotate(-90 12 ${(M.t + H - M.b) / 2})`}>actual points (mean of bin)</text>
+        <text x={(M.l + W - M.r) / 2} y={H - 6} textAnchor="middle">{axis?.x ?? "predicted xP (mean of bin)"}</text>
+        <text x={12} y={(M.t + H - M.b) / 2} textAnchor="middle" transform={`rotate(-90 12 ${(M.t + H - M.b) / 2})`}>{axis?.y ?? "actual points (mean of bin)"}</text>
         {sets.map((s, k) => s.data.map((b, i) => {
           const dx = (k - (sets.length - 1) / 2) * 3;
           return (
-            <g key={`${s.key}${i}`} onMouseMove={t.on(<><b>{s.label}</b><br />predicted {f(b.pred)} · actual {f(b.obs)}<br />95% interval {f(b.lo)}–{f(b.hi)} · {b.n.toLocaleString()} starts</>)} onMouseLeave={t.off}>
-              <line x1={sx(b.pred) + dx} x2={sx(b.pred) + dx} y1={sy(b.lo)} y2={sy(b.hi)} stroke={s.color} strokeWidth={1.5} opacity={0.55} />
+            <g key={`${s.key}${i}`} onMouseMove={t.on(<><b>{s.label}</b><br />predicted {f(b.pred, d)} · actual {f(b.obs, d)}<br />{b.lo != null && b.hi != null ? <>95% interval {f(b.lo, d)}–{f(b.hi, d)} · </> : null}{b.n.toLocaleString()} {axis?.unit ?? "starts"}</>)} onMouseLeave={t.off}>
+              {b.lo != null && b.hi != null && <line x1={sx(b.pred) + dx} x2={sx(b.pred) + dx} y1={sy(b.lo)} y2={sy(b.hi)} stroke={s.color} strokeWidth={1.5} opacity={0.55} />}
               <circle cx={sx(b.pred) + dx} cy={sy(b.obs)} r={4} fill={s.color} stroke="var(--panel)" strokeWidth={1.5} />
               <circle cx={sx(b.pred) + dx} cy={sy(b.obs)} r={10} fill="transparent" />
             </g>

@@ -1,10 +1,10 @@
-import { fmt, gwXp, pct, rangeXp, useApp } from "../data";
+import { fmt, gwXp, pct, rangeXp, useApp, XP_TITLE } from "../data";
 import { PlayerName, PlayerSearch, PosChip, RangePicker, StatusChip, TeamShort } from "../ui";
 
 const COLS = ["var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)"];
 
 export default function Compare() {
-  const { d, compare, toggleCompare, from, to, excluded } = useApp();
+  const { d, compare, toggleCompare, from, to, excluded, mode } = useApp();
   const ps = compare.map((id) => d.byId.get(id)!).filter(Boolean);
   const gws = d.gws.filter((g) => g >= from && g <= to);
   const W = 640, H = 220, M = 30;
@@ -42,7 +42,7 @@ export default function Compare() {
           </div>
           <div className="tablewrap">
             <table className="t">
-              <thead><tr><th></th><th>Player</th><th className="r">£m</th><th className="r">Own</th><th className="r">xP range</th><th className="r">xP/£m</th>
+              <thead><tr><th></th><th>Player</th><th className="r">£m</th><th className="r">Own</th><th className="r" title={XP_TITLE[mode]}>xP range</th><th className="r">xP/£m</th>
                 {gws.map((g) => <th key={g} className="r">GW{g}</th>)}<th className="r">haul %</th><th></th></tr></thead>
               <tbody>
                 {ps.map((p, k) => {

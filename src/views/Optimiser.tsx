@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BUDGET, fmt, POSITIONS, rangeXp, useApp, useStored } from "../data";
+import { BUDGET, fmt, POSITIONS, rangeXp, useApp, useStored, XP_TITLE } from "../data";
 import { optimise } from "../squad";
 import type { Player } from "../types";
 import { PlayerName, PlayerSearch, PosChip, RangePicker, StatusChip, TeamShort } from "../ui";
@@ -77,7 +77,7 @@ export default function Optimiser() {
 }
 
 function Result({ squad, xi, value }: { squad: Player[]; xi: Player[]; value: number }) {
-  const { from, to, excluded } = useApp();
+  const { from, to, excluded, mode } = useApp();
   const cost = squad.reduce((s, p) => s + p.price, 0);
   return (
     <div className="panel">
@@ -87,7 +87,7 @@ function Result({ squad, xi, value }: { squad: Player[]; xi: Player[]; value: nu
       </div>
       <div className="tablewrap">
         <table className="t">
-          <thead><tr><th>Player</th><th>Team</th><th className="r">£m</th><th className="r">xP</th><th className="r">xP/£m</th><th></th></tr></thead>
+          <thead><tr><th>Player</th><th>Team</th><th className="r">£m</th><th className="r" title={XP_TITLE[mode]}>xP</th><th className="r">xP/£m</th><th></th></tr></thead>
           <tbody>
             {POSITIONS.flatMap((pos) => squad.filter((p) => p.pos === pos)
               .sort((a, b) => Number(xi.includes(b)) - Number(xi.includes(a)) || rangeXp(b, from, to, excluded) - rangeXp(a, from, to, excluded)))
