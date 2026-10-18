@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { go } from "../App";
-import { fixtureKey, fmt, POSITIONS, rangeXp, useApp } from "../data";
+import { fixtureKey, fmt, POSITIONS, rangeXp, useApp, XP_LABEL } from "../data";
 import { atLeast } from "../prob";
 import type { Player, Pmf } from "../types";
 import { PlayerName, PmfBars, PosChip, StatusChip, TeamShort } from "../ui";
@@ -15,7 +15,7 @@ const PILLARS = [
 ];
 
 export default function Overview() {
-  const { d, excluded } = useApp();
+  const { d, excluded, mode } = useApp();
   const gw = d.fc.deadline_gw;
   const to = Math.min(d.gws[d.gws.length - 1], gw + 5);
   const starters = useMemo(() => d.players.filter((p) => p.fixtures.some((f) => f.gw === gw && f.xi) && (p.status === "a" || (p.chance_next ?? 0) >= 75)), [d, gw]);
@@ -50,7 +50,7 @@ export default function Overview() {
       <section>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
           <h2>Gameweek {gw}: the model's picks</h2>
-          <span className="metric-note">xP · if starts · probable starters, fit or ≥75%</span>
+          <span className="metric-note">xP · {XP_LABEL[mode]} · probable starters, fit or ≥75%</span>
         </div>
         <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", marginTop: 10 }}>
           {byPos.map(({ pos, top }) => (

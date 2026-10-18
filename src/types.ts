@@ -1,4 +1,5 @@
-// Shape of public/data/forecast.json, written by xFPL/analysis/26_forecast.py (schema_version 2).
+// Shape of public/data/forecast.json, written by xFPL/analysis/26_forecast.py (schema_version 3).
+// Schema 3 adds availability (p_start, p_sub), xP given a substitute appearance and the full mixture (`full`).
 
 export type Pos = "GKP" | "DEF" | "MID" | "FWD";
 
@@ -25,7 +26,25 @@ export interface PlayerFixture {
   sd_epi: number;
   parts: Record<string, number>;
   pmf?: Pmf;
+  // schema 3: availability and the full model (P(start) x xP|start + P(sub) x xP|sub)
+  p_start?: number;
+  p_sub?: number;
+  xp_sub?: number;
+  full?: FullModel;
+  xp_start?: number; // set by data.withMode: the start-conditional xP, kept when the view shows the full model
 }
+
+export interface FullModel {
+  xp: number;
+  q10: number;
+  q50: number;
+  q90: number;
+  p5: number;
+  p10: number;
+  pmf: Pmf;
+}
+
+export type XpMode = "start" | "full";
 
 export interface Player {
   id: number;
@@ -61,6 +80,7 @@ export interface Fixture {
 export interface Forecast {
   schema_version: number;
   target: string;
+  full_target?: string;
   season: string;
   deadline_gw: number;
   deadline_utc: string;

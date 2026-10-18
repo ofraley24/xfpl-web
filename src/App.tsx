@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { AppCtx, derive, fixtureKey, useStored, type AppState, type Derived } from "./data";
+import { AppCtx, derive, fixtureKey, hasFullModel, useStored, withMode, type AppState, type Derived } from "./data";
+import type { XpMode } from "./types";
 import type { Forecast } from "./types";
 import Overview from "./views/Overview";
 import Planner from "./views/Planner";
@@ -66,8 +67,12 @@ function Countdown({ iso }: { iso: string }) {
   return <span className="countdown">{d > 0 ? `${d}d ` : ""}{h}h {String(m).padStart(2, "0")}m</span>;
 }
 
-function Loaded({ d }: { d: Derived }) {
+function Loaded({ d: d0 }: { d: Derived }) {
   const route = useRoute();
+  const fullAvailable = hasFullModel(d0.fc);
+  const [modeStored, setMode] = useStored<XpMode>("xpmode", "start");
+  const mode: XpMode = fullAvailable ? modeStored : "start";
+  const d = useMemo(() => withMode(d0, mode), [d0, mode]);
   const first = d.gws[0], last = d.gws[d.gws.length - 1];
   const [rng, setRng] = useStored<[number, number]>(`range:${d.fc.deadline_gw}`, [first, Math.min(last, first + 5)]);
   const [excludedArr, setExcluded] = useStored<string[]>(`excluded:${d.fc.deadline_gw}`, []);
@@ -101,6 +106,9 @@ function Loaded({ d }: { d: Derived }) {
     setSquad,
     bank,
     setBank,
+    mode,
+    setMode,
+    fullAvailable,
   };
   const deadline = new Date(d.fc.deadline_utc);
   const narrow = route === "paper";
@@ -137,8 +145,20 @@ function Loaded({ d }: { d: Derived }) {
               <div>{deadline.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
               <div>in <Countdown iso={d.fc.deadline_utc} /></div>
             </div>
+            {fullAvailable && (
+              <div>
+                <div className="nav-label" style={{ margin: "0 0 4px" }}>xP shown</div>
+                <div className="seg" title="Which expected points every page shows">
+                  <button className={mode === "start" ? "on" : ""} onClick={() => setMode("start")}>If he starts</button>
+                  <button className={mode === "full" ? "on" : ""} onClick={() => setMode("full")}>Full model</button>
+                </div>
+              </div>
+            )}
             <div className="faint" style={{ fontSize: 11.5, lineHeight: 1.4 }}>
-              xP = expected FPL points <b>if the player starts</b>. <a href="#/paper" onClick={() => go("paper")}>How it's built</a>
+              {mode === "start"
+                ? <>xP = expected FPL points <b>if the player starts</b>.</>
+                : <>xP = expected FPL points <b>weighted by the chance he starts or comes on</b>; FPL's injury flags are applied as a rule of thumb.</>}{" "}
+              <a href="#/paper" onClick={() => go("paper")}>How it's built</a>
             </div>
             <div className="seg" title="Theme">
               {(["auto", "light", "dark"] as const).map((t) => (

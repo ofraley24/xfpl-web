@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { fixtureKey, fixturesIn, fmt, pct, POSITIONS, useApp, useStored } from "../data";
+import { fixtureKey, fixturesIn, fmt, pct, POSITIONS, useApp, useStored, XP_LABEL } from "../data";
 import type { Player, Pos } from "../types";
 import { heat, heatInk, PlayerName, PosChip, RangePicker, StatusChip, TeamBadge, TeamShort } from "../ui";
 import { club } from "../teamColours";
@@ -7,7 +7,7 @@ import { club } from "../teamColours";
 type SortKey = "xp" | "value" | "price" | "own" | "haul" | "perfx" | `gw${number}`;
 
 export default function Planner() {
-  const { d, from, to, excluded, toggleFixture, compare, toggleCompare } = useApp();
+  const { d, from, to, excluded, toggleFixture, compare, toggleCompare, mode } = useApp();
   const [pos, setPos] = useStored<Pos | "ALL">("pl:pos", "ALL");
   const [team, setTeam] = useStored<number>("pl:team", 0);
   const [maxPrice, setMaxPrice] = useStored<number>("pl:maxprice", 16);
@@ -59,7 +59,7 @@ export default function Planner() {
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div>
             <h2>Player analysis</h2>
-            <p className="sub">Expected points (given a start) summed over the gameweeks you pick. Click a fixture to switch it off.</p>
+            <p className="sub">Expected points ({mode === "start" ? "given a start" : "full model: weighted by the chance he starts or comes on"}) summed over the gameweeks you pick. Click a fixture to switch it off.</p>
           </div>
           <RangePicker />
         </div>
@@ -106,7 +106,7 @@ export default function Planner() {
               <th>Team</th>
               {th("price", "£m")}
               {th("own", "Own")}
-              {th("xp", `xP · if starts, GW${from}${to > from ? `–${to}` : ""}`)}
+              {th("xp", `xP · ${XP_LABEL[mode]}, GW${from}${to > from ? `–${to}` : ""}`)}
               {th("value", "xP/£m")}
               {th("perfx", "xP/fix")}
               {th("haul", "Haul %")}

@@ -1,6 +1,6 @@
 import { Tooltip } from "../Tooltip";
 import { useMemo, useState } from "react";
-import { fixtureKey, fmt, pct, POSITIONS, useApp, useStored } from "../data";
+import { fixtureKey, fmt, pct, POSITIONS, useApp, useStored, XP_TITLE } from "../data";
 import { atLeast, mean, quantile, sumAll } from "../prob";
 import type { Player, Pmf, Pos } from "../types";
 import { placeLabels, PlayerName, PlayerSearch, PmfBars, POS_SHAPE, PosChip, PosMarker, StatusChip, TeamShort } from "../ui";
@@ -21,7 +21,7 @@ const sdOf = (d: Pmf) => {
 };
 
 export default function Risk() {
-  const { d, excluded } = useApp();
+  const { d, excluded, mode: xpMode } = useApp();
   const first = d.gws[0];
   const [span, setSpan] = useStored<number>("rk:span", 1);
   const [mode, setMode] = useStored<Mode>("rk:mode", "chase");
@@ -91,7 +91,7 @@ export default function Risk() {
           <thead>
             <tr>
               <th>Player</th><th>Team</th><th className="r">£m</th><th className="r">Own</th>
-              <th className="r" title="Expected points if the player starts">xP</th>
+              <th className="r" title={XP_TITLE[xpMode]}>xP</th>
               <th className="r" title="Spread of outcomes (standard deviation)">Volatility</th>
               <th className="r" title="20th percentile of the simulated points: four weeks in five the player scores at least this">Bad week<div className="metric-note">20th pct</div></th>
               <th className="r" title={`Chance of ${span > 1 ? "averaging" : "scoring"} 2 or fewer points per fixture`}>Blank risk</th>

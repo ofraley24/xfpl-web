@@ -16,6 +16,17 @@ npm run dev        # copies the newest forecast from ../xFPL/data/forecasts, the
 npm run build      # static site in dist/ (open with `npm run preview`)
 ```
 
+## Deploy (Cloudflare Pages)
+
+```bash
+npm run deploy     # build, then upload dist/ to the Pages project "xfpl" (direct upload; data never goes through git)
+```
+
+The site is personal-use only: `deploy` refuses unless the live URL redirects to Cloudflare Access
+(`--allow-public` overrides). `public/_headers` sets `noindex`. The research repo's `pipeline/auto_refresh.py` runs
+`npm run deploy` after each successful weekly refresh (log: `xFPL/data/logs/deploy.log`). Override the project or URL
+with `XFPL_PAGES_PROJECT` / `XFPL_SITE_URL`.
+
 `npm run sync-data` copies the newest `forecast_*.json` (override the folder with `XFPL_FORECASTS=...`). Forecast files
 are data, not code: `public/data/*.json` is gitignored.
 

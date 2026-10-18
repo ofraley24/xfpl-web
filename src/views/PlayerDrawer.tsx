@@ -9,7 +9,7 @@ const PART_COL: Record<string, string> = {
 };
 
 export default function PlayerDrawer({ id, onClose }: { id: number; onClose: () => void }) {
-  const { d, excluded, toggleFixture, compare, toggleCompare, from, to } = useApp();
+  const { d, excluded, toggleFixture, compare, toggleCompare, from, to, mode } = useApp();
   const p = d.byId.get(id)!;
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -81,12 +81,24 @@ export default function PlayerDrawer({ id, onClose }: { id: number; onClose: () 
                   <span>5+: {pct(f.p5)}</span><span>10+: {pct(f.p10)}</span>
                   {!f.xi && <span title="Not in the probable XI used for the bonus simulation">bench risk</span>}
                 </div>
+                {f.p_start !== undefined && (
+                  <div className="row muted" style={{ fontSize: 12, gap: 12 }}>
+                    <span title="Chance he starts (availability model; FPL's injury flags applied as a rule of thumb)">starts {pct(f.p_start)}</span>
+                    <span title="Chance he comes off the bench">comes on {pct(f.p_sub ?? 0)}</span>
+                    <span title="Chance he does not play (0 points)">doesn't play {pct(Math.max(1 - f.p_start - (f.p_sub ?? 0), 0))}</span>
+                    {mode === "full"
+                      ? <span title="Expected points if he starts">if he starts: {fmt(f.xp_start ?? f.xp, 2)}</span>
+                      : f.full && <span title="Expected points weighted by the chance he starts or comes on">full model: {fmt(f.full.xp, 2)}</span>}
+                  </div>
+                )}
                 {f.pmf && <PmfBars pmf={f.pmf} width={480} height={46} maxPts={20} />}
               </div>
             );
           })}
         </div>
-        <p className="faint" style={{ marginTop: 12 }}>All figures assume the player starts. Distributions come from 1,000 simulated matches per fixture.</p>
+        <p className="faint" style={{ marginTop: 12 }}>{mode === "start"
+          ? "All figures assume the player starts."
+          : "Figures are the full model: the chance he starts or comes on times the points in each case; a fixture he misses scores 0."} Distributions come from 1,000 simulated matches per fixture.</p>
       </aside>
     </>
   );
