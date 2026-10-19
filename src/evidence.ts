@@ -42,7 +42,11 @@ export interface Evidence {
 }
 export interface TrackMetrics { bias: number; mae: number; rmse: number; rank: number; top10: number; ratio: number }
 export interface TrackGw { gw: number; n: number; forecast_snapshot: string; deadline_snapshot: string; model: TrackMetrics; fpl_same: TrackMetrics; fpl_deadline: TrackMetrics }
-export interface Track { generated_utc: string; season: string; rows: string; locked: { gw: number; snapshot: string; deadline: string; scored: boolean }[]; gameweeks: TrackGw[]; overall: null | { n: number; gws: number; model: TrackMetrics; fpl_same: TrackMetrics; fpl_deadline: TrackMetrics } }
+export interface TrackOverall { n: number; gws: number; model: TrackMetrics; fpl_same: TrackMetrics; fpl_deadline: TrackMetrics }
+// full_*: every registered player, played or not, scored with the full model (forecasts from schema 3 on);
+// absent in track records written before 2026-10-19.
+export interface TrackFullGw { gw: number; n: number; played: number; model: TrackMetrics; fpl_same: TrackMetrics; fpl_deadline: TrackMetrics }
+export interface Track { generated_utc: string; season: string; rows: string; locked: { gw: number; snapshot: string; deadline: string; scored: boolean }[]; gameweeks: TrackGw[]; overall: null | TrackOverall; full_rows?: string; full_gameweeks?: TrackFullGw[]; full_overall?: null | TrackOverall }
 
 export function useJson<T>(url: string) {
   const [v, setV] = useState<T | null>(null);

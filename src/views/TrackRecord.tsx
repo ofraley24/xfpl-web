@@ -39,14 +39,34 @@ export default function TrackRecord() {
       )}
       {tr?.overall && (
         <section className="grid">
-          <h2>{tr.overall.gws} gameweek{tr.overall.gws > 1 ? "s" : ""} scored · {tr.overall.n.toLocaleString()} player-gameweeks</h2>
+          <h2>{tr.overall.gws} gameweek{tr.overall.gws > 1 ? "s" : ""} scored</h2>
+          <h3>Starters · xP if he starts</h3>
+          <p className="sub">{tr.overall.n.toLocaleString()} player-gameweeks in which the player started every fixture.</p>
           <Compare rows={[["xFPL model", tr.overall.model, true], ["FPL, same moment", tr.overall.fpl_same, false], ["FPL, at the deadline", tr.overall.fpl_deadline, false]]} />
+          {tr.full_overall && (
+            <>
+              <h3>Every player · full model</h3>
+              <p className="sub">{tr.full_overall.n.toLocaleString()} player-gameweeks: every registered player, whether he played or not
+                (0 points if not), scored with the full model. FPL's projection also prices the chance of not playing, so this is the
+                like-for-like comparison.</p>
+              <Compare rows={[["xFPL full model", tr.full_overall.model, true], ["FPL, same moment", tr.full_overall.fpl_same, false], ["FPL, at the deadline", tr.full_overall.fpl_deadline, false]]} />
+            </>
+          )}
           <h3>By gameweek</h3>
           {tr.gameweeks.slice().reverse().map((g) => (
             <div key={g.gw} className="panel">
               <div className="row" style={{ justifyContent: "space-between" }}><b className="serif" style={{ fontSize: 18 }}>Gameweek {g.gw}</b>
                 <span className="faint">{g.n} starters · forecast locked {when(snapTime(g.forecast_snapshot))}</span></div>
               <Compare rows={[["xFPL model", g.model, true], ["FPL, same moment", g.fpl_same, false], ["FPL, at the deadline", g.fpl_deadline, false]]} />
+              {(() => {
+                const f = tr.full_gameweeks?.find((x) => x.gw === g.gw);
+                return f && (
+                  <>
+                    <div className="faint" style={{ margin: "10px 0 4px" }}>Every player · full model · {f.n} players, {f.played} played</div>
+                    <Compare rows={[["xFPL full model", f.model, true], ["FPL, same moment", f.fpl_same, false], ["FPL, at the deadline", f.fpl_deadline, false]]} />
+                  </>
+                );
+              })()}
             </div>
           ))}
         </section>
@@ -63,6 +83,8 @@ export default function TrackRecord() {
             <li><b>FPL, at the deadline:</b> FPL's last projection before the deadline, which has seen later team news. A tougher test.</li>
             <li>FPL's projection also prices in the chance of not playing; restricting to starters removes most of that difference,
               but not all of it.</li>
+            <li><b>Every player · full model</b> (from the forecasts that carry it): every registered player, played or not, scored with
+              P(start) × xP if he starts + P(sub) × xP if he comes on, against the same two FPL projections.</li>
           </ul>
         </div>
         <div className="panel">
