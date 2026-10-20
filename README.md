@@ -43,9 +43,8 @@ starts**; it is labelled quietly in the metric names and explained in the paper.
 | Scoring events | chance of each scoring event per player and fixture, each from its own component model: goal, 2+ goals, assist, clean sheet, defensive contribution, any bonus, 3 bonus, save points, yellow card; leaders per event; double gameweeks as 'at least once'. Follows the xP toggle (full model mixes start / substitute / no appearance) |
 | Risk & upside | built on the full points distributions: strategy modes (protect a lead / expected points / chase a target), upside against xP with the typical upside for each xP (leave-one-out local regression; no comparison where too few similar players), bad-week (20th pct) and good-week (90th pct) outcomes, blank risk, upside swaps, chase captains. Multi-gameweek totals assume independent fixtures |
 | Fixtures | fixture ticker: expected goals for, clean-sheet chance or expected goal difference |
-| My squad | best XI and captain each gameweek, chip planner, transfer finder by squad effect over a chosen window (next GW / 3 / 5 / 8 GWs) |
+| My squad | best XI and captain each gameweek, chip planner, the team's points distribution for the gameweek (best XI + captain; team-mates treated as independent), transfer finder by squad effect over a chosen window (next GW / 3 / 5 / 8 GWs) |
 | Dream team | the optimal 15 under FPL's rules, solved as an integer program in the browser |
-| Simulator | play a gameweek out from the simulated distributions; team-total distribution |
 | Stats | season / last-4 player and team stats, explorer, shot maps and percentiles |
 | Haul map, Compare | price vs xP scatter (position by shape and colour); side-by-side players |
 | The paper | condensed version of the Results Report: method, testing, results with live figures (`evidence.json`), horizon backtest, benchmark caveat, limitations; coefficients and hyperparameters withheld |
@@ -65,6 +64,6 @@ appearance (`probs_sub`). Types: `src/types.ts`.
 ## Caveats
 
 - Sums over gameweeks have no intervals: the backtest showed normal-approximation intervals for short ranges are not
-  calibrated (`xFPL/docs/HORIZON_RESULTS.md`). The simulator's ranges assume independent players and are for fun.
+  calibrated (`xFPL/docs/HORIZON_RESULTS.md`). The squad's team-total distribution treats team-mates as independent and is not backtested.
 - The dream team keeps one XI for the whole range (no weekly re-picks, no captain) — the squad tab re-picks weekly.
 - Probable XI is a heuristic used for bonus competition in the simulation, not a starting probability.

@@ -10,7 +10,6 @@ import Fixtures from "./views/Fixtures";
 import Squad from "./views/Squad";
 import Optimiser from "./views/Optimiser";
 import Scatter from "./views/Scatter";
-import Simulator from "./views/Simulator";
 import Compare from "./views/Compare";
 import Stats from "./views/Stats";
 import Paper from "./views/Paper";
@@ -20,7 +19,7 @@ import PlayerDrawer from "./views/PlayerDrawer";
 const NAV: { group: string | null; items: [string, string][] }[] = [
   { group: null, items: [["overview", "Overview"]] },
   { group: "Plan", items: [["planner", "Player analysis"], ["events", "Scoring events"], ["risk", "Risk & upside"], ["fixtures", "Fixtures"]] },
-  { group: "My team", items: [["squad", "My squad"], ["optimiser", "Dream team"], ["sim", "Simulator"]] },
+  { group: "My team", items: [["squad", "My squad"], ["optimiser", "Dream team"]] },
   { group: "Explore", items: [["stats", "Stats"], ["scatter", "Haul map"], ["compare", "Compare"]] },
   { group: "Method", items: [["paper", "The paper"], ["record", "Track record"]] },
 ];
@@ -176,7 +175,6 @@ function Loaded({ d: d0 }: { d: Derived }) {
           {route === "fixtures" && <Fixtures />}
           {route === "squad" && <Squad />}
           {route === "optimiser" && <Optimiser />}
-          {route === "sim" && <Simulator />}
           {route === "stats" && <Stats />}
           {route === "scatter" && <Scatter />}
           {route === "compare" && <Compare />}

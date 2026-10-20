@@ -205,11 +205,6 @@ figure.fig figcaption b { color: var(--text); font-weight: 650; }
 .toc a:hover { color: var(--accent); }
 .byline { font-family: var(--sans); font-size: 13px; color: var(--faint); }
 
-/* ---- simulator */
-.score-big { font-family: var(--serif); font-size: 72px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; }
-.spin { animation: pulse .6s ease-in-out infinite; }
-@keyframes pulse { 50% { opacity: .6; } }
-
 /* ---- responsive */
 @media (max-width: 1000px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
@@ -223,7 +218,6 @@ figure.fig figcaption b { color: var(--text); font-weight: 650; }
   h1 { font-size: 30px; }
   .article { font-size: 17px; }
   .shirt { width: 74px; }
-  .score-big { font-size: 52px; }
 }
 
 /* ---- page headers: each view's first panel reads as an editorial header */

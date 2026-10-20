@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { atLeast, gwPmf, mean, quantile, scale, sumAll } from "../prob";
+import { Tooltip } from "../Tooltip";
 import { FPL_PICK_TEAM_URL, FPL_TRANSFERS_URL, importTeam, type ImportedTeam } from "../fplTeam";
 import { BUDGET, fmt, gwXp, POSITIONS, rangeXp, SQUAD_SHAPE, useApp, useStored } from "../data";
 import { bestLineup, squadProblems, type GwLineup } from "../squad";
@@ -96,6 +98,7 @@ export default function Squad() {
         </div>
       </div>
 
+      {squad.length >= 11 && <TeamDistribution lineup={lineups[gws.indexOf(shownGw)]} />}
       {imported && full && <PlanCard imported={imported} squad={squad} lineups={lineups} />}
       {full && <ChipPlanner lineups={lineups} />}
       {full && <TransferFinder squad={squad} />}
@@ -348,3 +351,65 @@ function PlanCard({ imported, squad, lineups }: { imported: ImportedTeam; squad:
     </div>
   );
 }
+
+/** The whole range of points the best XI + captain could score in one gameweek: every starter's distribution added up. */
+function TeamDistribution({ lineup }: { lineup: GwLineup }) {
+  const { excluded, mode } = useApp();
+  const [target, setTarget] = useStored<number>("squad:target", 60);
+  const [hover, setHover] = useState<{ i: number; cx: number; cy: number } | null>(null);
+  const total = useMemo(() => sumAll(lineup.xi.map((p) => {
+    const pm = gwPmf(p, lineup.gw, excluded) ?? { lo: 0, p: [1] };
+    return lineup.captain?.id === p.id ? scale(pm, 2) : pm;
+  })), [lineup, excluded]);
+  const lo = quantile(total, 0.001), hi = quantile(total, 0.999);
+  const vals = Array.from({ length: hi - lo + 1 }, (_, i) => total.p[lo + i - total.lo] ?? 0);
+  const top = Math.max(...vals, 1e-9);
+  const W = 640, H = 150, w = W / vals.length;
+  const pc = (v: number) => (v >= 0.0995 ? `${(100 * v).toFixed(0)}%` : v >= 0.001 ? `${(100 * v).toFixed(1)}%` : "<0.1%");
+  return (
+    <div className="panel">
+      <h3>GW{lineup.gw}: every score your team could make</h3>
+      <p className="sub">Your best XI and captain, each player's full points distribution added together. Hover a bar for its chance.</p>
+      <div className="kpis" style={{ marginBottom: 10 }}>
+        <div className="kpi"><div className="v num">{fmt(mean(total))}</div><div className="l">expected</div></div>
+        <div className="kpi"><div className="v num">{quantile(total, 0.2)}</div><div className="l">bad week (20th pct)</div></div>
+        <div className="kpi"><div className="v num">{quantile(total, 0.9)}</div><div className="l">good week (90th pct)</div></div>
+        <div className="kpi"><div className="v num" style={{ color: "var(--accent)" }}>{pc(atLeast(total, target))}</div><div className="l">chance of {target}+</div></div>
+      </div>
+      <div style={{ position: "relative" }}>
+        <svg viewBox={`0 0 ${W} ${H + 16}`} style={{ width: "100%", height: "auto" }} role="img" aria-label="team points distribution" onMouseLeave={() => setHover(null)}>
+          {vals.map((v, i) => {
+            const x = lo + i, h = (v / top) * H, hit = x >= target;
+            return (
+              <g key={i} onMouseMove={(e) => setHover({ i, cx: e.clientX, cy: e.clientY })}>
+                <rect x={i * w} y={0} width={w} height={H} fill="transparent" />
+                <rect x={i * w + 0.3} y={H - h} width={Math.max(1, w - 0.6)} height={h} rx={1}
+                  fill={hit ? "var(--series-4)" : "var(--series-1)"} opacity={hover && hover.i !== i ? 0.5 : 1} />
+              </g>
+            );
+          })}
+          {Array.from({ length: 7 }, (_, k) => Math.round(lo + ((k + 1) * (hi - lo)) / 8)).map((x) => (
+            <text key={x} x={(x - lo) * w + w / 2} y={H + 13} textAnchor="middle">{x}</text>
+          ))}
+        </svg>
+        {hover && (
+          <Tooltip x={hover.cx} y={hover.cy}>
+            <b>{lo + hover.i} pts</b>: {pc(vals[hover.i])}<br />
+            <span className="muted">{lo + hover.i} or more: {pc(atLeast(total, lo + hover.i))}</span>
+          </Tooltip>
+        )}
+      </div>
+      <div className="row" style={{ marginTop: 6 }}>
+        <span className="muted">Target</span>
+        <input type="range" min={20} max={120} value={target} onChange={(e) => setTarget(Number(e.target.value))} />
+        <b className="num">{target}</b>
+      </div>
+      <p className="faint" style={{ fontSize: 12, margin: "6px 0 0" }}>
+        {mode === "start" ? "Assumes all eleven start. " : "Includes each player's chance of not playing, with no automatic substitutions. "}
+        Team-mates' scores are added as if independent (in reality they move together, e.g. a clean sheet), so the true spread is
+        somewhat wider; this team total has not been backtested.
+      </p>
+    </div>
+  );
+}
+
