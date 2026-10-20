@@ -29,8 +29,8 @@ if (stats.length) {
   console.log(`sync-data: ${stats[stats.length - 1]} -> public/data/stats.json`);
 }
 
-// evidence (validation results) and the live track record
-for (const f of ["evidence.json", "track_record.json"]) {
+// evidence (validation results), the live track record, and top-10k/100k ownership (pipeline/12_fetch_elite_ownership.py)
+for (const f of ["evidence.json", "track_record.json", "elite_ownership.json"]) {
   if (existsSync(join(src, f))) {
     copyFileSync(join(src, f), join(dst, f));
     console.log(`sync-data: ${f} -> public/data/${f}`);
