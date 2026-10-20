@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-import { useStats, type RecentMatch } from "../stats";
-import { fixtureKey, fmt, partsInPoints, pct, useApp } from "../data";
+import { useEffect, useMemo } from "react";
+import { fmtStat, percentile, STAT, statValue, useStats, type RecentMatch, type Window } from "../stats";
+import { fixtureKey, fmt, partsInPoints, pct, useApp, useStored } from "../data";
 import { PmfBars, PosChip, StatusChip } from "../ui";
 
 const PART_COL: Record<string, string> = {
@@ -61,6 +61,7 @@ export default function PlayerDrawer({ id, onClose }: { id: number; onClose: () 
         )}
 
         <RecentForm id={p.id} />
+        <SeasonStats id={p.id} />
 
         <h3 style={{ marginTop: 18 }}>Forecast fixtures</h3>
         <div className="grid" style={{ gap: 8 }}>
@@ -89,6 +90,16 @@ export default function PlayerDrawer({ id, onClose }: { id: number; onClose: () 
                     {mode === "full"
                       ? <span title="Expected points if he starts">if he starts: {fmt(f.xp_start ?? f.xp, 2)}</span>
                       : f.full && <span title="Expected points weighted by the chance he starts or comes on">full model: {fmt(f.full.xp, 2)}</span>}
+                  </div>
+                )}
+                {f.probs && (
+                  <div className="row muted" style={{ fontSize: 12, gap: 12 }}>
+                    <span title="Chance of scoring">goal {pct(f.probs.g)}</span>
+                    <span title="Chance of an assist">assist {pct(f.probs.a)}</span>
+                    {p.pos !== "FWD" && <span title="Chance of a clean sheet with 60+ minutes">clean sheet {pct(f.probs.cs)}</span>}
+                    {p.pos !== "GKP" && <span title="Chance of reaching the defensive-contribution threshold (+2)">def. contribution {pct(f.probs.dc)}</span>}
+                    {p.pos === "GKP" && <span title="Chance of 3+ saves">save pts {pct(f.probs.sv)}</span>}
+                    <span title="Chance of any bonus">bonus {pct(f.probs.b)}</span>
                   </div>
                 )}
                 {f.pmf && <PmfBars pmf={f.pmf} width={480} height={46} maxPts={20} />}
@@ -157,6 +168,66 @@ function RecentForm({ id }: { id: number }) {
         </table>
       </div>
       <p className="faint" style={{ margin: "4px 0 0", fontSize: 11.5 }}>* came off the bench · – did not play. xG, xA, shots and key passes from Understat.</p>
+    </div>
+  );
+}
+
+const SEASON_GROUPS: Record<string, string[]> = {
+  Attack: ["g", "uxg", "npxg", "shots", "sot", "big", "xgps"],
+  Creation: ["a", "uxa", "kp", "xgchain", "xgbuildup", "cre"],
+  Defence: ["dc", "dc_hits", "cbi", "tkl", "rec", "cs", "fxgc"],
+  FPL: ["pts", "bonus", "bps", "ict", "yc"],
+};
+const GK_GROUPS: Record<string, string[]> = {
+  Goalkeeping: ["saves", "gp", "gc", "fxgc", "cs", "pen_saved"],
+  FPL: ["pts", "bonus", "bps", "ict", "yc"],
+};
+const MIN_MINS = 270;
+
+/** Season (or last-four) totals or per-90 rates, each with its percentile among players in the same position. */
+function SeasonStats({ id }: { id: number }) {
+  const { doc } = useStats();
+  const [w, setW] = useStored<Window>("drawer:window", "season");
+  const [per90, setPer90] = useStored<boolean>("drawer:per90", true);
+  const sp = doc?.players.find((x) => x.id === id);
+  const peers = useMemo(() => (doc && sp ? doc.players.filter((x) => x.pos === sp.pos && (x.s[w].mins ?? 0) >= MIN_MINS) : []), [doc, sp, w]);
+  if (!doc || !sp || !(sp.s.season.mins ?? 0)) return null;
+  const groups = sp.pos === "GKP" ? GK_GROUPS : SEASON_GROUPS;
+  const enough = (sp.s[w].mins ?? 0) >= MIN_MINS;
+  return (
+    <div style={{ marginTop: 18 }}>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <h3 style={{ margin: 0 }}>Underlying stats</h3>
+        <span className="row" style={{ gap: 6 }}>
+          <span className="seg">{(["season", "last4"] as const).map((x) => <button key={x} className={w === x ? "on" : ""} onClick={() => setW(x)}>{x === "season" ? "season" : "last 4 GWs"}</button>)}</span>
+          <span className="seg"><button className={!per90 ? "on" : ""} onClick={() => setPer90(false)}>total</button><button className={per90 ? "on" : ""} onClick={() => setPer90(true)}>per 90</button></span>
+        </span>
+      </div>
+      <p className="faint" style={{ margin: "4px 0 8px", fontSize: 12 }}>
+        {sp.s[w].mins ?? 0} minutes. Bars show the percentile among {sp.pos === "GKP" ? "goalkeepers" : sp.pos === "DEF" ? "defenders" : sp.pos === "MID" ? "midfielders" : "forwards"} with {MIN_MINS}+ minutes{enough ? "" : " (too few minutes to rank him)"}.
+      </p>
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
+        {Object.entries(groups).map(([g, keys]) => (
+          <div key={g}>
+            <div className="nav-label" style={{ margin: "0 0 4px" }}>{g}</div>
+            {keys.map((k) => {
+              const def = STAT.get(k)!;
+              const x = statValue(sp, w, k, per90);
+              const pc = enough && x !== null ? percentile(peers.map((q) => statValue(q, w, k, per90)).filter((y): y is number => y !== null), x, def.low) : null;
+              return (
+                <div key={k} title={def.desc} style={{ display: "grid", gridTemplateColumns: "1fr 54px 60px", alignItems: "center", gap: 6, fontSize: 12.5, padding: "1px 0" }}>
+                  <span className="muted">{def.label}{per90 && def.per90 ? <span className="faint">/90</span> : ""}</span>
+                  <span className="r num">{fmtStat(k, x, per90)}</span>
+                  <span style={{ height: 6, background: "var(--line)", borderRadius: 3, overflow: "hidden" }} title={pc === null ? undefined : `${Math.round(100 * pc)}th percentile`}>
+                    {pc !== null && <span style={{ display: "block", height: "100%", width: `${Math.max(3, 100 * pc)}%`, background: "var(--seq-4)" }} />}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <p className="faint" style={{ margin: "6px 0 0", fontSize: 11.5 }}>xG, xA, shots, key passes, xGChain and xGBuildup from Understat; the rest from FPL. These are what happened; the forecast above is what the model expects.</p>
     </div>
   );
 }

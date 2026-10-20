@@ -5,6 +5,7 @@ import type { Forecast } from "./types";
 import Overview from "./views/Overview";
 import Planner from "./views/Planner";
 import Risk from "./views/Risk";
+import Events from "./views/Events";
 import Fixtures from "./views/Fixtures";
 import Squad from "./views/Squad";
 import Optimiser from "./views/Optimiser";
@@ -18,7 +19,7 @@ import PlayerDrawer from "./views/PlayerDrawer";
 
 const NAV: { group: string | null; items: [string, string][] }[] = [
   { group: null, items: [["overview", "Overview"]] },
-  { group: "Plan", items: [["planner", "Player analysis"], ["risk", "Risk & upside"], ["fixtures", "Fixtures"]] },
+  { group: "Plan", items: [["planner", "Player analysis"], ["events", "Scoring events"], ["risk", "Risk & upside"], ["fixtures", "Fixtures"]] },
   { group: "My team", items: [["squad", "My squad"], ["optimiser", "Dream team"], ["sim", "Simulator"]] },
   { group: "Explore", items: [["stats", "Stats"], ["scatter", "Haul map"], ["compare", "Compare"]] },
   { group: "Method", items: [["paper", "The paper"], ["record", "Track record"]] },
@@ -171,6 +172,7 @@ function Loaded({ d: d0 }: { d: Derived }) {
           {route === "overview" && <Overview />}
           {route === "planner" && <Planner />}
           {route === "risk" && <Risk />}
+          {route === "events" && <Events />}
           {route === "fixtures" && <Fixtures />}
           {route === "squad" && <Squad />}
           {route === "optimiser" && <Optimiser />}

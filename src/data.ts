@@ -85,7 +85,13 @@ export function withMode(d: Derived, mode: XpMode): Derived {
       parts.sub = pb * (f.xp_sub ?? 0);
       const sd_epi = ps * f.sd_epi;
       const v = pmfMoments(f.full.pmf).variance;
-      return { ...f, xp_start: f.xp, xp: f.full.xp, q10: f.full.q10, q50: f.full.q50, q90: f.full.q90, p5: f.full.p5,
+      // event probabilities: P(start) x P(event | start) + P(sub) x P(event | sub); no appearance contributes nothing
+      let probs = f.probs;
+      if (f.probs) {
+        const sub = f.probs_sub ?? {};
+        probs = Object.fromEntries(Object.entries(f.probs).map(([k, v]) => [k, ps * v + pb * ((sub as Record<string, number>)[k] ?? 0)])) as unknown as typeof f.probs;
+      }
+      return { ...f, probs, xp_start: f.xp, xp: f.full.xp, q10: f.full.q10, q50: f.full.q50, q90: f.full.q90, p5: f.full.p5,
                p10: f.full.p10, pmf: f.full.pmf, parts, sd_epi, var_ale: Math.max(v - sd_epi * sd_epi, 0) };
     }),
   }));

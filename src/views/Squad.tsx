@@ -135,7 +135,11 @@ function Shirt({ p, xp, opp, cap, out }: { p: Player; xp: number; opp: string; c
 }
 
 function TransferFinder({ squad }: { squad: Player[] }) {
-  const { d, from, to, excluded, bank, setSquad } = useApp();
+  const { d, excluded, bank, setSquad } = useApp();
+  const first = d.gws[0], last = d.gws[d.gws.length - 1];
+  const windows = [1, 3, 5, 8].filter((_, i, a) => i === 0 || first + a[i - 1] - 1 < last);
+  const [win, setWin] = useStored<number>("tf:window", 5);
+  const from = first, to = Math.min(last, first + win - 1);
   const ids = new Set(squad.map((p) => p.id));
   const val = useMemo(() => new Map(d.players.map((p) => [p.id, rangeXp(p, from, to, excluded)])), [d, from, to, excluded]);
   const moves = useMemo(() => {
@@ -164,9 +168,15 @@ function TransferFinder({ squad }: { squad: Player[] }) {
   }, [squad, d, bank, val, from, to, excluded]); // eslint-disable-line
   return (
     <div className="panel">
-      <h3>Best single transfers for GW{from}–{to}</h3>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <h3 style={{ margin: 0 }}>Best single transfers for {from === to ? `GW${from}` : `GW${from}–${to}`}</h3>
+        <div className="seg" title="How many gameweeks ahead to value each swap over">
+          {windows.map((w) => <button key={w} className={win === w ? "on" : ""} onClick={() => setWin(w)}>{w === 1 ? "next GW" : `${w} GWs`}</button>)}
+        </div>
+      </div>
       <p className="sub">Legal swaps (same position, within budget, max 3 per club) among probable starters, ranked by what they add to
-        your squad: best XI + captain each gameweek, with and without the swap. A −4 hit pays off only if the squad gain is above 4.</p>
+        your squad over the chosen window: best XI + captain each gameweek, with and without the swap. A short window favours this week's
+        fixture; a long one favours the run. A −4 hit pays off only if the squad gain is above 4.</p>
       <div className="tablewrap">
         <table className="t">
           <thead><tr><th>Out</th><th>In</th><th className="r">£ diff</th><th className="r">player xP gain</th><th className="r">squad gain</th><th></th></tr></thead>

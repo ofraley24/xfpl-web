@@ -31,8 +31,15 @@ export interface PlayerFixture {
   p_sub?: number;
   xp_sub?: number;
   full?: FullModel;
+  // schema 4: event probabilities given a start, and given a substitute appearance
+  probs?: Probs;
+  probs_sub?: Partial<Probs>;
   xp_start?: number; // set by data.withMode: the start-conditional xP, kept when the view shows the full model
 }
+
+/** g goal, g2 two+ goals, a assist, cs clean sheet, dc defensive-contribution points, b any bonus, b3 three bonus,
+ *  sv save points, yc yellow card. */
+export interface Probs { g: number; g2: number; a: number; cs: number; dc: number; b: number; b3: number; sv: number; yc: number }
 
 export interface FullModel {
   xp: number;
