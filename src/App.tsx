@@ -14,11 +14,12 @@ import Compare from "./views/Compare";
 import Stats from "./views/Stats";
 import Paper from "./views/Paper";
 import TrackRecord from "./views/TrackRecord";
+import Elite from "./views/Elite";
 import PlayerDrawer from "./views/PlayerDrawer";
 
 const NAV: { group: string | null; items: [string, string][] }[] = [
   { group: null, items: [["overview", "Overview"]] },
-  { group: "Plan", items: [["planner", "Player analysis"], ["events", "Scoring events"], ["risk", "Risk & upside"], ["fixtures", "Fixtures"]] },
+  { group: "Plan", items: [["planner", "Player analysis"], ["events", "Scoring events"], ["risk", "Risk & upside"], ["elite", "Elite ownership"], ["fixtures", "Fixtures"]] },
   { group: "My team", items: [["squad", "My squad"], ["optimiser", "Dream team"]] },
   { group: "Explore", items: [["stats", "Stats"], ["scatter", "Haul map"], ["compare", "Compare"]] },
   { group: "Method", items: [["paper", "The paper"], ["record", "Track record"]] },
@@ -172,6 +173,7 @@ function Loaded({ d: d0 }: { d: Derived }) {
           {route === "planner" && <Planner />}
           {route === "risk" && <Risk />}
           {route === "events" && <Events />}
+          {route === "elite" && <Elite />}
           {route === "fixtures" && <Fixtures />}
           {route === "squad" && <Squad />}
           {route === "optimiser" && <Optimiser />}
