@@ -42,14 +42,14 @@ export default function TrackRecord() {
           <h2>{tr.overall.gws} gameweek{tr.overall.gws > 1 ? "s" : ""} scored</h2>
           <h3>Starters · xP if he starts</h3>
           <p className="sub">{tr.overall.n.toLocaleString()} player-gameweeks in which the player started every fixture.</p>
-          <Compare rows={[["xFPL model", tr.overall.model, true], ["FPL, same moment", tr.overall.fpl_same, false], ["FPL, at the deadline", tr.overall.fpl_deadline, false]]} />
+          <Compare rows={[["This model", tr.overall.model, true], ["FPL, same moment", tr.overall.fpl_same, false], ["FPL, at the deadline", tr.overall.fpl_deadline, false]]} />
           {tr.full_overall && (
             <>
               <h3>Every player · full model</h3>
               <p className="sub">{tr.full_overall.n.toLocaleString()} player-gameweeks: every registered player, whether he played or not
                 (0 points if not), scored with the full model. FPL's projection also prices the chance of not playing, so this is the
                 like-for-like comparison.</p>
-              <Compare rows={[["xFPL full model", tr.full_overall.model, true], ["FPL, same moment", tr.full_overall.fpl_same, false], ["FPL, at the deadline", tr.full_overall.fpl_deadline, false]]} />
+              <Compare rows={[["This model, full", tr.full_overall.model, true], ["FPL, same moment", tr.full_overall.fpl_same, false], ["FPL, at the deadline", tr.full_overall.fpl_deadline, false]]} />
             </>
           )}
           <h3>By gameweek</h3>
@@ -57,13 +57,13 @@ export default function TrackRecord() {
             <div key={g.gw} className="panel">
               <div className="row" style={{ justifyContent: "space-between" }}><b className="serif" style={{ fontSize: 18 }}>Gameweek {g.gw}</b>
                 <span className="faint">{g.n} starters · forecast locked {when(snapTime(g.forecast_snapshot))}</span></div>
-              <Compare rows={[["xFPL model", g.model, true], ["FPL, same moment", g.fpl_same, false], ["FPL, at the deadline", g.fpl_deadline, false]]} />
+              <Compare rows={[["This model", g.model, true], ["FPL, same moment", g.fpl_same, false], ["FPL, at the deadline", g.fpl_deadline, false]]} />
               {(() => {
                 const f = tr.full_gameweeks?.find((x) => x.gw === g.gw);
                 return f && (
                   <>
                     <div className="faint" style={{ margin: "10px 0 4px" }}>Every player · full model · {f.n} players, {f.played} played</div>
-                    <Compare rows={[["xFPL full model", f.model, true], ["FPL, same moment", f.fpl_same, false], ["FPL, at the deadline", f.fpl_deadline, false]]} />
+                    <Compare rows={[["This model, full", f.model, true], ["FPL, same moment", f.fpl_same, false], ["FPL, at the deadline", f.fpl_deadline, false]]} />
                   </>
                 );
               })()}

@@ -40,7 +40,7 @@ export default function Paper() {
     <article className="article">
       <div className="kicker">Method · condensed paper</div>
       <h1>Forecasting Fantasy Premier League points with a calibrated, leakage-audited model</h1>
-      <div className="byline">The xFPL project · October 2026 · condensed from the full Results Report and Mathematical Formulation.
+      <div className="byline">Quantitative FPL · October 2026 · condensed from the full Results Report and Mathematical Formulation.
         Exact coefficients, hyperparameter values and feature lists are withheld; every result is reported in full.</div>
 
       <div className="abstract">
@@ -222,7 +222,7 @@ export default function Paper() {
 }
 
 function AccuracyTable({ sets }: { sets: EvidenceSet[] }) {
-  const rows: [string, (s: EvidenceSet) => Acc, boolean][] = [["xFPL model", (s) => s.accuracy.model, true], ["Points per start (last 5)", (s) => s.accuracy.pps5, false], ["Form (last 5 fixtures)", (s) => s.accuracy.form5, false]];
+  const rows: [string, (s: EvidenceSet) => Acc, boolean][] = [["This model", (s) => s.accuracy.model, true], ["Points per start (last 5)", (s) => s.accuracy.pps5, false], ["Form (last 5 fixtures)", (s) => s.accuracy.form5, false]];
   return (
     <figure className="fig" style={{ overflowX: "auto" }}>
       <table className="plain">

@@ -1,5 +1,6 @@
 import solver from "javascript-lp-solver";
-import { BUDGET, POSITIONS, SQUAD_SHAPE, XI_MAX, XI_MIN, gwXp, rangeXp } from "./data";
+import { BUDGET, POSITIONS, SQUAD_SHAPE, XI_MAX, XI_MIN, fixturesIn, gwXp, rangeXp } from "./data";
+import { mean } from "./prob";
 import type { Player, Pos } from "./types";
 
 export interface GwLineup {
@@ -51,16 +52,32 @@ export interface OptimiseOptions {
   locked: Set<number>;
   banned: Set<number>;
   benchWeight: number; // value of a bench player's xP relative to a starter's (bench cover)
+  riskWeight?: number; // points of objective per point² of excess variance: < 0 prefers steady players, > 0 boom-or-bust
   maxPool?: number;
 }
 
 /**
- * Dream team: 15 players (2/5/5/3, <= 3 per club, within budget) maximising the starting XI's expected points over
+ * Squad Optimiser: 15 players (2/5/5/3, <= 3 per club, within budget) maximising the starting XI's expected points over
  * the range + benchWeight x the bench's. One XI is chosen for the whole range (a simplification: real managers
  * re-pick weekly). Integer program solved in the browser.
+ * With riskWeight λ the objective is xP + λ × excess variance per player: his variance minus the typical variance for his
+ * xP in his position (least squares on xP across the candidates). Raw variance rises with xP, so weighting it directly mostly
+ * buys or sells xP; the excess picks steadier or more boom-or-bust players at similar xP. Treating players and fixtures as
+ * independent, the XI's variance is the sum of its players', so the objective stays linear (team-mates' correlation is ignored).
  */
-export function optimise(o: OptimiseOptions): { squad: Player[]; xi: Player[]; value: number } | null {
-  const val = new Map(o.players.map((p) => [p.id, rangeXp(p, o.from, o.to, o.excluded)]));
+export function optimise(o: OptimiseOptions): { squad: Player[]; xi: Player[]; value: number; variance: number } | null {
+  const lam = o.riskWeight ?? 0;
+  const xp = new Map(o.players.map((p) => [p.id, rangeXp(p, o.from, o.to, o.excluded)]));
+  const vr = new Map(o.players.map((p) => [p.id, rangeVariance(p, o.from, o.to, o.excluded)]));
+  const excess = new Map<number, number>();
+  for (const pos of POSITIONS) {
+    const ps = o.players.filter((p) => p.pos === pos);
+    const n = ps.length, mx = ps.reduce((s, p) => s + xp.get(p.id)!, 0) / n, my = ps.reduce((s, p) => s + vr.get(p.id)!, 0) / n;
+    const sxy = ps.reduce((s, p) => s + (xp.get(p.id)! - mx) * (vr.get(p.id)! - my), 0), sxx = ps.reduce((s, p) => s + (xp.get(p.id)! - mx) ** 2, 0);
+    const b = sxx > 0 ? sxy / sxx : 0;
+    for (const p of ps) excess.set(p.id, vr.get(p.id)! - (my + b * (xp.get(p.id)! - mx)));
+  }
+  const val = new Map(o.players.map((p) => [p.id, xp.get(p.id)! + lam * excess.get(p.id)!]));
   // candidate pool: locked players + the best by value and by value per £m in each position
   const pool = new Set<number>(o.locked);
   const per = o.maxPool ?? 30;
@@ -97,5 +114,14 @@ export function optimise(o: OptimiseOptions): { squad: Player[]; xi: Player[]; v
   const pick = (prefix: string) => cand.filter((p) => Number(res[`${prefix}_${p.id}`] ?? 0) > 0.5);
   const xi = pick("s");
   const squad = [...xi, ...pick("b")];
-  return { squad, xi, value: xi.reduce((s, p) => s + val.get(p.id)!, 0) };
+  return { squad, xi, value: xi.reduce((s, p) => s + xp.get(p.id)!, 0), variance: xi.reduce((s, p) => s + vr.get(p.id)!, 0) };
+}
+
+/** Variance of a player's points over [from, to]: the sum of each fixture's simulated-distribution variance. */
+export function rangeVariance(p: Player, from: number, to: number, excluded: Set<string>) {
+  return fixturesIn(p, from, to, excluded).reduce((s, f) => {
+    if (!f.pmf) return s;
+    const m = mean(f.pmf);
+    return s + f.pmf.p.reduce((a, q, i) => a + q * (f.pmf!.lo + i - m) ** 2, 0);
+  }, 0);
 }

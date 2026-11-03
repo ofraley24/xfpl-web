@@ -4,7 +4,7 @@ import type { XpMode } from "./types";
 import type { Forecast } from "./types";
 import Overview from "./views/Overview";
 import Planner from "./views/Planner";
-import Risk from "./views/Risk";
+import Strategies from "./views/Strategies";
 import Events from "./views/Events";
 import Fixtures from "./views/Fixtures";
 import Squad from "./views/Squad";
@@ -14,17 +14,18 @@ import Compare from "./views/Compare";
 import Stats from "./views/Stats";
 import Paper from "./views/Paper";
 import TrackRecord from "./views/TrackRecord";
-import Elite from "./views/Elite";
 import PlayerDrawer from "./views/PlayerDrawer";
 
 const NAV: { group: string | null; items: [string, string][] }[] = [
   { group: null, items: [["overview", "Overview"]] },
-  { group: "Plan", items: [["planner", "Player analysis"], ["events", "Scoring events"], ["risk", "Risk & upside"], ["elite", "Elite ownership"], ["fixtures", "Fixtures"]] },
-  { group: "My team", items: [["squad", "My squad"], ["optimiser", "Dream team"]] },
+  { group: "Plan", items: [["planner", "Projections"], ["events", "Player Props"], ["risk", "Transfer Strategies"], ["fixtures", "Fixtures"]] },
+  { group: "My team", items: [["squad", "My squad"], ["optimiser", "Squad Optimiser"]] },
   { group: "Explore", items: [["stats", "Stats"], ["scatter", "Haul map"], ["compare", "Compare"]] },
   { group: "Method", items: [["paper", "The paper"], ["record", "Track record"]] },
 ];
 const ROUTES = new Set(NAV.flatMap((g) => g.items.map(([k]) => k)));
+// old bookmarks: pages that were merged into another
+const ALIASES: Record<string, string> = { elite: "risk" };
 export type Route = string;
 
 export function go(route: Route) {
@@ -33,7 +34,8 @@ export function go(route: Route) {
 
 function useRoute(): Route {
   const read = () => {
-    const r = window.location.hash.replace(/^#\/?/, "").split("/")[0];
+    const h = window.location.hash.replace(/^#\/?/, "").split("/")[0];
+    const r = ALIASES[h] ?? h;
     return ROUTES.has(r) ? r : "overview";
   };
   const [r, setR] = useState(read);
@@ -117,7 +119,7 @@ function Loaded({ d: d0 }: { d: Derived }) {
     <AppCtx.Provider value={state}>
       <div className="mobile-bar">
         <button className="btn small" onClick={() => setMenu(true)} aria-label="Open menu">☰</button>
-        <span className="wordmark">x<i>FPL</i></span>
+        <span className="wordmark">Quantitative <i>FPL</i></span>
         <span className="spacer" />
         <span className="muted" style={{ fontSize: 12 }}>GW{d.fc.deadline_gw} · <Countdown iso={d.fc.deadline_utc} /></span>
       </div>
@@ -125,8 +127,8 @@ function Loaded({ d: d0 }: { d: Derived }) {
       <div className="shell">
         <aside className={`side ${menu ? "open" : ""}`}>
           <div>
-            <div className="wordmark">x<i>FPL</i></div>
-            <div className="tagline">Expected FPL points from a model you can audit.</div>
+            <div className="wordmark">Quantitative <i>FPL</i></div>
+            <div className="tagline">Forecasting points distributions to personalise your strategy.</div>
           </div>
           <nav className="grid" style={{ gap: 14 }} aria-label="Sections">
             {NAV.map((g) => (
@@ -171,9 +173,8 @@ function Loaded({ d: d0 }: { d: Derived }) {
         <main className={narrow ? "narrow" : ""}>
           {route === "overview" && <Overview />}
           {route === "planner" && <Planner />}
-          {route === "risk" && <Risk />}
+          {route === "risk" && <Strategies />}
           {route === "events" && <Events />}
-          {route === "elite" && <Elite />}
           {route === "fixtures" && <Fixtures />}
           {route === "squad" && <Squad />}
           {route === "optimiser" && <Optimiser />}

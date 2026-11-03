@@ -42,7 +42,7 @@ export default function Overview() {
       <header>
         <div className="kicker">Gameweek {gw} · deadline {deadline.toLocaleString(undefined, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</div>
         <h1>Expected points, measured honestly.</h1>
-        <p className="lede">xFPL is a points model built from the ground up: dynamic team-strength ratings, player talent
+        <p className="lede">Quantitative FPL is a points model built from the ground up: dynamic team-strength ratings, player talent
           separated from team quality, and every goal, assist, clean sheet and bonus point played out a thousand times per
           fixture, on more than a decade of shot-level data.</p>
       </header>
@@ -152,11 +152,11 @@ function SameXp({ starters, gw }: { starters: Player[]; gw: number }) {
         <h2>Same xP, different stories</h2>
         <span className="metric-note">two {({ GKP: "goalkeepers", DEF: "defenders", MID: "midfielders", FWD: "forwards" } as const)[hi.p.pos]} · gameweek {gw} · full points distributions</span>
       </div>
-      <p className="sub" style={{ marginTop: 4 }}>Expected points are only the average. Every xFPL forecast is a full distribution of
+      <p className="sub" style={{ marginTop: 4 }}>Expected points are only the average. Every forecast here is a full distribution of
         points, so you can see whether a player is a steady earner or a boom-or-bust bet, and choose the one that suits your rank.</p>
       <div className="row" style={{ alignItems: "stretch", gap: 16 }}>{card(hi, "more upside")}{card(lo, "steadier")}</div>
       <div className="row" style={{ marginTop: 12 }}>
-        <button className="btn primary" onClick={() => go("risk")}>Explore risk & upside →</button>
+        <button className="btn primary" onClick={() => go("risk")}>Explore transfer strategies →</button>
         <span className="faint" style={{ fontSize: 12.5 }}>Protect a lead with players whose bad weeks are still decent, or chase a rival with upside, and see what it costs in xP.</span>
       </div>
     </section>

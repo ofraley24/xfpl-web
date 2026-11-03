@@ -2,14 +2,11 @@ import { Tooltip } from "./Tooltip";
 import { useMemo, useState } from "react";
 import { fmt, useApp } from "./data";
 import type { Player, Pos } from "./types";
-import { club } from "./teamColours";
 
-/** Sequential (one hue, light -> dark) background for an xP value on a lo..hi scale, with a readable ink. */
-export function heat(x: number, hi: number, lo = 2) {
-  const t = Math.max(0, Math.min(1, (x - lo) / (hi - lo)));
-  return `color-mix(in srgb, var(--seq-5) ${Math.round(t * 100)}%, var(--seq-0))`;
-}
-export const heatInk = (x: number, hi: number, lo = 2) => ((x - lo) / (hi - lo) > 0.55 ? "#ffffff" : "var(--text)");
+/** Table shading: one green, from clear (t = 0) to strongest (t = 1); capped so the text ink always reads. */
+export const tint = (t: number) => `color-mix(in srgb, var(--heat) ${Math.round(Math.max(0, Math.min(1, t)) * 55)}%, transparent)`;
+/** Shading for an xP value on a lo..hi scale. */
+export const heat = (x: number, hi: number, lo = 2) => tint((x - lo) / (hi - lo));
 
 /** Position marker: colour plus a shape, so position never depends on colour alone. */
 export function PosMarker({ pos, x, y, r, opacity = 0.7, ...rest }: { pos: Pos; x: number; y: number; r: number; opacity?: number } & React.SVGProps<SVGPathElement>) {
@@ -171,16 +168,4 @@ export function placeLabels<T>(items: T[], pos: (t: T) => { x: number; y: number
     out.push({ item: it, x: right ? p.x + 6 : p.x - 8, y: p.y - 8, anchor: right ? "start" : "end" });
   }
   return out;
-}
-
-/** Two-tone club badge: primary fill, secondary edge. */
-export function TeamBadge({ id }: { id: number }) {
-  const { d } = useApp();
-  const short = d.teams.get(id)?.short;
-  const c = club(short);
-  return (
-    <span className="teambadge" style={{ background: c.primary, color: c.ink, boxShadow: `inset 0 -3px 0 ${c.secondary}` }} title={d.teams.get(id)?.name}>
-      {short ?? "?"}
-    </span>
-  );
 }

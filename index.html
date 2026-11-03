@@ -3,11 +3,40 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>xFPL Planner</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%2337003c'/><text x='16' y='21' font-size='13' text-anchor='middle' fill='%2300ff85' font-family='sans-serif' font-weight='700'>xP</text></svg>" />
+    <title>Quantitative FPL · Forecasting points distributions to personalise your strategy</title>
+    <meta name="description" content="A Fantasy Premier League points model: expected points and the full points distribution for every player and fixture, with a public track record against FPL's own forecasts." />
+    <meta name="theme-color" content="#f7f5f0" />
+    <!-- Social previews (Reddit, X, Slack, iMessage). Absolute URLs: change the domain here if the site moves. -->
+    <link rel="canonical" href="https://xfpl.pages.dev/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Quantitative FPL" />
+    <meta property="og:title" content="Quantitative FPL · Forecasting points distributions to personalise your strategy" />
+    <meta property="og:description" content="Every FPL player's full points distribution, not just the average, with a public track record." />
+    <meta property="og:url" content="https://xfpl.pages.dev/" />
+    <meta property="og:image" content="https://xfpl.pages.dev/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Quantitative FPL: forecasting points distributions to personalise your strategy, beside a right-skewed points distribution." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Quantitative FPL · Forecasting points distributions to personalise your strategy" />
+    <meta name="twitter:description" content="Every FPL player's full points distribution, not just the average, with a public track record." />
+    <meta name="twitter:image" content="https://xfpl.pages.dev/og.png" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='%230b6e4f'/><text x='16' y='22.5' font-size='19' text-anchor='middle' fill='%23f7f5f0' font-family='Georgia,serif' font-style='italic'>Q</text></svg>" />
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Static summary for readers that don't run JavaScript (link unfurlers, AI readers); React replaces it on mount. -->
+    <div id="root">
+      <main style="max-width: 640px; margin: 64px auto; padding: 0 16px; font-family: Georgia, serif; color: #1a1714;">
+        <h1>Quantitative FPL</h1>
+        <p><strong>Forecasting points distributions to personalise your strategy.</strong> A Fantasy Premier League points model built from dynamic
+          team-strength ratings, player talent separated from team quality, and every goal, assist, clean sheet and bonus
+          point played out a thousand times per fixture, on more than a decade of shot-level data.</p>
+        <p>For every player and fixture: expected points if he starts, the full points distribution (not just the
+          average), scoring-event probabilities, a squad optimiser, and a gameweek-by-gameweek track record against FPL's
+          own forecasts.</p>
+        <noscript><p>The interactive site needs JavaScript.</p></noscript>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { fixtureKey, POSITIONS, useApp, useStored, XP_LABEL } from "../data";
 import type { Player, Pos, Probs } from "../types";
-import { PlayerName, PosChip, StatusChip, TeamBadge } from "../ui";
+import { PlayerName, PosChip, StatusChip, TeamShort, tint } from "../ui";
 
 type Key = keyof Probs;
 const COLS: { k: Key; label: string; title: string; only?: Pos[]; not?: Pos[] }[] = [
@@ -51,14 +51,14 @@ export default function Events() {
   const colMax = useMemo(() => Object.fromEntries(COLS.map((c) => [c.k, Math.max(0.01, ...rows.map((x) => x.r.probs[c.k]))])), [rows]);
   const sorted = useMemo(() => [...rows].sort((a, b) => (sort.desc ? b.r.probs[sort.k] - a.r.probs[sort.k] : a.r.probs[sort.k] - b.r.probs[sort.k])), [rows, sort]);
   const pct = (v: number) => (v >= 0.995 ? ">99%" : v < 0.005 ? "<1%" : `${Math.round(100 * v)}%`);
-  const shade = (v: number, k: Key) => `color-mix(in srgb, var(--seq-4) ${Math.round(Math.min(1, v / colMax[k]) * 55)}%, transparent)`;
+  const shade = (v: number, k: Key) => tint(v / colMax[k]);
   const applies = (c: (typeof COLS)[number], p: Player) => (!c.only || c.only.includes(p.pos)) && (!c.not || !c.not.includes(p.pos));
 
   if (!hasProbs) return <div className="panel">This forecast predates event probabilities; they arrive with the next forecast.</div>;
   return (
     <div className="grid">
       <div className="panel">
-        <h2>Scoring events</h2>
+        <h2>Player Props</h2>
         <p className="sub">Every way of scoring has its own model: goals, assists, clean sheets, defensive contributions, bonus,
           saves and cards. These are the chances each one happens, player by player and fixture by fixture, from the same
           simulated matches as xP ({XP_LABEL[mode]}).</p>
@@ -109,7 +109,7 @@ export default function Events() {
             {sorted.slice(0, limit).map(({ p, r }) => (
               <tr key={p.id}>
                 <td><div className="row" style={{ gap: 6 }}><PosChip pos={p.pos} /><PlayerName p={p} /><StatusChip p={p} /></div></td>
-                <td><TeamBadge id={p.team} /></td>
+                <td><TeamShort id={p.team} /></td>
                 <td className="muted">{opps(d, r.fx)}</td>
                 {mode === "full" && <td className="r num muted">{pct(r.fx[0].p_start ?? 1)}</td>}
                 {COLS.map((c) => applies(c, p)

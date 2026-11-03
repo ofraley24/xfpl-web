@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
 import { fixtureKey, fmt, POSITIONS, useApp, useStored, XP_LABEL } from "../data";
-import { useJson } from "../evidence";
 import type { Player, Pos } from "../types";
 import { PlayerName, PosChip, StatusChip, TeamShort } from "../ui";
 
 // Shape of public/data/elite_ownership.json, written by xFPL/pipeline/12_fetch_elite_ownership.py (schema 1).
 // Fractions throughout (0.5 = 50%); EO is a mean multiplier (captain 2, triple captain 3), so it can exceed 1.
-interface ElitePlayer {
+export interface ElitePlayer {
   id: number;
   web_name: string;
   overall_own: number;
@@ -14,7 +13,7 @@ interface ElitePlayer {
   top100k_own: number; top100k_start: number; top100k_captain: number; top100k_eo: number;
   top100k_own_moe: number; top100k_start_moe: number; top100k_captain_moe: number; top100k_eo_moe: number;
 }
-interface Elite {
+export interface Elite {
   schema: number;
   season: string;
   gw: number;
@@ -26,16 +25,15 @@ interface Elite {
   players: ElitePlayer[];
 }
 
-type Tier = "top10k" | "top100k";
+export type Tier = "top10k" | "top100k";
 type SortKey = "eo" | "own" | "captain" | "start" | "overall" | "xp" | "gain" | "capgain";
 
 const pc = (x: number, d = 1) => (100 * x).toFixed(d);
 const CHIP: Record<string, string> = { "3xc": "triple captain", bboost: "bench boost", freehit: "free hit", wildcard: "wildcard" };
 
-export default function Elite() {
+/** The full elite ownership table (part of Transfer Strategies; the page owns the file and the field toggle). */
+export function EliteTable({ el, tier }: { el: Elite; tier: Tier }) {
   const { d, excluded, mode } = useApp();
-  const { v: el, err } = useJson<Elite>("./data/elite_ownership.json");
-  const [tier, setTier] = useStored<Tier>("el:tier", "top10k");
   const [pos, setPos] = useStored<Pos | "ALL">("el:pos", "ALL");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<{ k: SortKey; desc: boolean }>({ k: "eo", desc: true });
@@ -43,7 +41,6 @@ export default function Elite() {
   const gw = d.fc.deadline_gw;
 
   const rows = useMemo(() => {
-    if (!el) return [];
     const s = q.trim().toLowerCase();
     const xpNext = (p: Player) => p.fixtures.filter((f) => f.gw === gw && !excluded.has(fixtureKey(p.id, f.fixture))).reduce((a, f) => a + f.xp, 0);
     return el.players.flatMap((e) => {
@@ -77,8 +74,6 @@ export default function Elite() {
     <>{pc(x)}{moe !== undefined && moe >= 0.0005 ? <span className="faint" style={{ fontSize: 11 }}> ±{pc(moe)}</span> : null}</>
   );
 
-  if (err) return <div className="panel">No elite ownership file yet ({err}).</div>;
-  if (!el) return <div className="muted">Loading elite ownership…</div>;
   const chips = Object.entries(el.top10k_chips).sort((a, b) => b[1] - a[1])
     .map(([k, n]) => { const x = 100 * n / el.top10k_managers; return `${x < 1 ? "<1" : x.toFixed(0)}% ${CHIP[k] ?? k}`; }).join(", ");
   const stale = el.gw < gw;
@@ -86,13 +81,9 @@ export default function Elite() {
   return (
     <div className="grid">
       <div className="panel">
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-          <div>
-            <h2>Elite ownership</h2>
-            <p className="sub">What the top 10,000 and top 100,000 managers own, start and captain, and their effective ownership (EO):
-              the average multiplier on a player's points across those teams (starter 1, captain 2, triple captain 3, bench 0).</p>
-          </div>
-        </div>
+        <h3 style={{ margin: 0 }}>Elite ownership</h3>
+        <p className="sub">What the top 10,000 and top 100,000 managers own, start and captain, and their effective ownership (EO):
+          the average multiplier on a player's points across those teams (starter 1, captain 2, triple captain 3, bench 0).</p>
         <p className="sub" style={{ marginTop: 0 }}>
           <b>Gameweek {el.gw} teams{stale ? `, not gameweek ${gw}'s` : ""}.</b>{" "}
           {stale && <>FPL hides everyone's picks until the deadline, so these are the teams entered at the last deadline:
@@ -101,10 +92,6 @@ export default function Elite() {
           ranks 10,001–100,000; ± is the 95% sampling margin. Top-10k chips in GW{el.gw}: {chips || "none"}.
         </p>
         <div className="row">
-          <div className="seg">
-            <button className={tier === "top10k" ? "on" : ""} onClick={() => setTier("top10k")}>Top 10k</button>
-            <button className={tier === "top100k" ? "on" : ""} onClick={() => setTier("top100k")}>Top 100k</button>
-          </div>
           <div className="seg">
             {(["ALL", ...POSITIONS] as const).map((x) => (
               <button key={x} className={pos === x ? "on" : ""} onClick={() => setPos(x)}>{x}</button>
@@ -158,7 +145,7 @@ export default function Elite() {
         Rank moves on the difference between your points and the field's. If a player scores x points, you gain x × (your multiplier − EO) on the
         average elite manager: starting a player whose EO is 30% gains 0.7 x, and a player at 130% EO (widely captained) costs you 0.3 x
         even if you start him, unless you captain him too. The gain columns apply this to the gameweek {gw} xP; they are averages, and the
-        same xP can come from very different spreads of points (see Risk & upside). EO is from gameweek {el.gw} teams.
+        same xP can come from very different spreads of points (see the differential map above). EO is from gameweek {el.gw} teams.
       </p>
     </div>
   );

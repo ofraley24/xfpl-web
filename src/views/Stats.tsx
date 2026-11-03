@@ -6,7 +6,7 @@ import {
   type StatPlayer, type StatsDoc, type StatTeam, type Window,
 } from "../stats";
 import type { Pos } from "../types";
-import { placeLabels, POS_SHAPE, PosChip, PosMarker } from "../ui";
+import { placeLabels, POS_SHAPE, PosChip, PosMarker, tint } from "../ui";
 
 type Sub = "players" | "teams" | "explorer";
 
@@ -41,9 +41,8 @@ export default function Stats() {
   );
 }
 
-const shade = (pct: number) => pct >= 0.5
-  ? `color-mix(in srgb, var(--good) ${Math.round((pct - 0.5) * 70)}%, transparent)`
-  : `color-mix(in srgb, var(--bad) ${Math.round((0.5 - pct) * 55)}%, transparent)`;
+// percentile within the list: clear at the bottom, strongest green at the top
+const shade = (pct: number) => tint(pct ** 1.5);
 
 function PlayersTable({ doc, w, open }: { doc: StatsDoc; w: Window; open: (id: number) => void }) {
   const { d } = useApp();

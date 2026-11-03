@@ -33,7 +33,7 @@ export default function Squad() {
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div>
             <h2>My squad</h2>
-            <p className="sub">Import your FPL team, build one, or load the Dream team. Each gameweek the best XI and captain are picked automatically.</p>
+            <p className="sub">Import your FPL team, build one, or load one from the Squad Optimiser. Each gameweek the best XI and captain are picked automatically.</p>
           </div>
           <RangePicker />
         </div>

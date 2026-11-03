@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- Social preview card (1200x630). Render to public/og.png with:
+     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --hide-scrollbars \
+       --window-size=1200,630 --screenshot=public/og.png scripts/og-image.html -->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+  @font-face { font-family: "Newsreader"; src: url("../node_modules/@fontsource-variable/newsreader/files/newsreader-latin-opsz-normal.woff2") format("woff2"); font-weight: 200 800; }
+  @font-face { font-family: "Newsreader"; src: url("../node_modules/@fontsource-variable/newsreader/files/newsreader-latin-opsz-italic.woff2") format("woff2"); font-weight: 200 800; font-style: italic; }
+  @font-face { font-family: "Inter"; src: url("../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body { background: #f7f5f0; color: #1a1714; font-family: "Inter", sans-serif; box-sizing: border-box; padding: 64px 72px; position: relative; }
+  .rule { position: absolute; left: 72px; right: 72px; height: 1px; background: #cfc8bb; }
+  .top { top: 56px; } .bottom { bottom: 56px; }
+  .kicker { margin-top: 26px; font-size: 22px; letter-spacing: .14em; text-transform: uppercase; color: #0b6e4f; font-weight: 600; }
+  .word { font-family: "Newsreader", serif; font-size: 92px; line-height: 1; margin-top: 22px; font-weight: 500; letter-spacing: -.02em; }
+  .word i { color: #0b6e4f; font-weight: 400; }
+  .head { font-family: "Newsreader", serif; font-size: 38px; max-width: 760px; line-height: 1.2; margin-top: 26px; color: #1a1714; font-weight: 400; }
+  .sub { font-size: 24px; color: #5d5850; margin-top: 18px; line-height: 1.45; max-width: 640px; }
+  .dist { position: absolute; right: 72px; bottom: 88px; display: flex; align-items: flex-end; gap: 6px; height: 220px; }
+  .dist span { width: 22px; background: #0b6e4f; opacity: .9; }
+  .dist span.tail { background: #b7791f; }
+  .axis { position: absolute; right: 72px; bottom: 80px; width: 310px; height: 2px; background: #1a1714; }
+</style>
+</head>
+<body>
+  <div class="rule top"></div>
+  <div class="kicker">Fantasy Premier League · points model</div>
+  <div class="word">Quantitative <i>FPL</i></div>
+  <div class="head">Forecasting points distributions to personalise your strategy.</div>
+  <div class="sub">Every player's full points distribution, not just the average, with a public track record.</div>
+  <!-- A right-skewed points distribution: the haul tail is the point. -->
+  <div class="dist">
+    <span style="height:58%"></span><span style="height:100%"></span><span style="height:64%"></span><span style="height:40%"></span>
+    <span style="height:30%"></span><span style="height:22%"></span><span style="height:15%"></span><span class="tail" style="height:11%"></span>
+    <span class="tail" style="height:8%"></span><span class="tail" style="height:5%"></span><span class="tail" style="height:3%"></span>
+  </div>
+  <div class="axis"></div>
+  <div class="rule bottom"></div>
+</body>
+</html>

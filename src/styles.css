@@ -1,4 +1,4 @@
-/* xFPL — editorial design system. Paper & ink, one accent, serif display, hairline rules. */
+/* Quantitative FPL — editorial design system. Paper & ink, one accent, serif display, hairline rules. */
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/newsreader";
 @import "@fontsource-variable/newsreader/opsz-italic.css";
@@ -28,8 +28,8 @@
   --pink: var(--bad);
   --cyan: var(--series-1);
   --gold: #b7791f;
-  --pos-GKP: #b7791f; --pos-DEF: #2a78d6; --pos-MID: #148a62; --pos-FWD: #d4552a;
-  --heat-0: var(--mid);
+  --pos-GKP: #b7791f; --pos-DEF: #2a78d6; --pos-MID: #7a5ac8; --pos-FWD: #d4552a;
+  --heat: #1f9a63;        /* table shading: one green, stronger with magnitude */
   --shadow: 0 1px 2px rgba(40, 30, 10, .06), 0 8px 28px rgba(40, 30, 10, .08);
   --serif: "Newsreader Variable", "Iowan Old Style", Georgia, serif;
   --sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -39,11 +39,11 @@
   :root:not([data-theme="light"]) {
     --bg: #111317; --panel: #171a1f; --panel-2: #1f232a; --line: #2a2f37; --line-strong: #3a414c;
     --text: #f1eee8; --muted: #b8b2a7; --faint: #8b867d;
-    --accent: #3cc48f; --accent-soft: #173327; --accent-ink: #0b1a13;
+    --accent: #3cc48f; --accent-soft: #173327; --accent-ink: #0b1a13; --heat: #3cc48f;
     --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
     --good: #3987e5; --bad: #e66767; --mid: #262a31;
     --seq-0: #18202b; --seq-1: #13294a; --seq-2: #184f95; --seq-3: #256abf; --seq-4: #3987e5; --seq-5: #6da7ec; --seq-6: #9ec5f4;
-    --gold: #d9a441; --pos-GKP: #d9a441; --pos-DEF: #3987e5; --pos-MID: #2fb380; --pos-FWD: #e0703f;
+    --gold: #d9a441; --pos-GKP: #d9a441; --pos-DEF: #3987e5; --pos-MID: #a68ae8; --pos-FWD: #e0703f;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
     color-scheme: dark;
   }
@@ -51,11 +51,11 @@
 :root[data-theme="dark"] {
   --bg: #111317; --panel: #171a1f; --panel-2: #1f232a; --line: #2a2f37; --line-strong: #3a414c;
   --text: #f1eee8; --muted: #b8b2a7; --faint: #8b867d;
-  --accent: #3cc48f; --accent-soft: #173327; --accent-ink: #0b1a13;
+  --accent: #3cc48f; --accent-soft: #173327; --accent-ink: #0b1a13; --heat: #3cc48f;
   --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
   --good: #3987e5; --bad: #e66767; --mid: #262a31;
   --seq-0: #18202b; --seq-1: #13294a; --seq-2: #184f95; --seq-3: #256abf; --seq-4: #3987e5; --seq-5: #6da7ec; --seq-6: #9ec5f4;
-  --gold: #d9a441; --pos-GKP: #d9a441; --pos-DEF: #3987e5; --pos-MID: #2fb380; --pos-FWD: #e0703f;
+  --gold: #d9a441; --pos-GKP: #d9a441; --pos-DEF: #3987e5; --pos-MID: #a68ae8; --pos-FWD: #e0703f;
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
   color-scheme: dark;
 }
@@ -72,7 +72,7 @@ a { color: var(--accent); text-underline-offset: 2px; }
 .shell { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 100vh; }
 .side { position: sticky; top: 0; height: 100vh; overflow-y: auto; border-right: 1px solid var(--line); padding: 22px 16px 16px;
   display: flex; flex-direction: column; gap: 18px; background: var(--bg); }
-.wordmark { font-family: var(--serif); font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.wordmark { font-family: var(--serif); font-size: 25px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
 .wordmark i { font-style: italic; color: var(--accent); font-weight: 500; }
 .tagline { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.35; }
 .nav-group { display: grid; gap: 1px; }
@@ -212,7 +212,7 @@ figure.fig figcaption b { color: var(--text); font-weight: 650; }
   .side.open { transform: none; }
   .mobile-bar { display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 30; padding: 10px 16px;
     background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
-  .mobile-bar .wordmark { font-size: 22px; }
+  .mobile-bar .wordmark { font-size: 19px; }
   main { padding: 18px 16px 48px; }
   .two, .three { grid-template-columns: minmax(0, 1fr); }
   h1 { font-size: 30px; }
@@ -236,6 +236,5 @@ main > .grid > .panel:first-child .sub { font-family: var(--serif); font-size: 1
 .article h2, .article h3 { scroll-margin-top: 70px; }
 .newsbox { margin-top: 10px; background: var(--panel-2); border-left: 3px solid var(--gold); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
 .newsbox b { color: var(--text); }
-.teambadge { display: inline-block; min-width: 38px; text-align: center; padding: 1px 6px 3px; border-radius: 5px; font-size: 10.5px; font-weight: 750; letter-spacing: .04em; line-height: 15px; }
 a.btn { display: inline-block; text-decoration: none; color: var(--text); }
 a.btn.primary { color: var(--accent-ink); }

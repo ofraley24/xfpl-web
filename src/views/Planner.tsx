@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 import { fixtureKey, fixturesIn, fmt, pct, POSITIONS, useApp, useStored, XP_LABEL } from "../data";
 import type { Player, Pos } from "../types";
-import { heat, heatInk, PlayerName, PosChip, RangePicker, StatusChip, TeamBadge, TeamShort } from "../ui";
-import { club } from "../teamColours";
+import { heat, PlayerName, PosChip, RangePicker, StatusChip, TeamShort } from "../ui";
 
 type SortKey = "xp" | "value" | "price" | "own" | "haul" | "perfx" | `gw${number}`;
 
@@ -13,7 +12,6 @@ export default function Planner() {
   const [maxPrice, setMaxPrice] = useStored<number>("pl:maxprice", 16);
   const [starters, setStarters] = useStored<boolean>("pl:starters", true);
   const [fit, setFit] = useStored<boolean>("pl:fit", false);
-  const [colours, setColours] = useStored<"off" | "stripe" | "tint">("pl:colours", "stripe");
   const [maxOwn, setMaxOwn] = useStored<number>("pl:maxown", 100);
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<{ k: SortKey; desc: boolean }>({ k: "xp", desc: true });
@@ -58,7 +56,7 @@ export default function Planner() {
       <div className="panel">
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div>
-            <h2>Player analysis</h2>
+            <h2>Projections</h2>
             <p className="sub">Expected points ({mode === "start" ? "given a start" : "full model: weighted by the chance he starts or comes on"}) summed over the gameweeks you pick. Click a fixture to switch it off.</p>
           </div>
           <RangePicker />
@@ -91,9 +89,6 @@ export default function Planner() {
           </label>
           <input type="text" placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
           <span className="muted">{rows.length} players</span>
-          <span className="spacer" />
-          <span className="muted" style={{ fontSize: 12.5 }}>Team colours</span>
-          <div className="seg">{(["off", "stripe", "tint"] as const).map((m) => <button key={m} className={colours === m ? "on" : ""} onClick={() => setColours(m)}>{m}</button>)}</div>
         </div>
       </div>
 
@@ -115,12 +110,10 @@ export default function Planner() {
           </thead>
           <tbody>
             {sorted.slice(0, limit).map(({ p, xp, value, haul, perfx }) => (
-              <tr key={p.id} style={colours === "tint" ? { background: `color-mix(in srgb, ${club(d.teams.get(p.team)?.short).tint ?? club(d.teams.get(p.team)?.short).primary} 11%, transparent)` } : undefined}
-                className={colours === "stripe" ? "striped" : undefined}>
-                <td style={colours === "stripe" ? { boxShadow: `inset 4px 0 0 ${club(d.teams.get(p.team)?.short).primary}` } : undefined}>
-                  <input type="checkbox" checked={compare.includes(p.id)} onChange={() => toggleCompare(p.id)} /></td>
+              <tr key={p.id}>
+                <td><input type="checkbox" checked={compare.includes(p.id)} onChange={() => toggleCompare(p.id)} /></td>
                 <td><div className="row" style={{ gap: 6 }}><PosChip pos={p.pos} /><PlayerName p={p} /><StatusChip p={p} /></div></td>
-                <td>{colours === "off" ? <TeamShort id={p.team} /> : <TeamBadge id={p.team} />}</td>
+                <td><TeamShort id={p.team} /></td>
                 <td className="r num">{fmt(p.price)}</td>
                 <td className="r num muted">{fmt(p.own)}%</td>
                 <td className="r num"><b>{fmt(xp)}</b></td>
@@ -153,7 +146,7 @@ export function GwCell({ p, gw, excluded, toggle }: { p: Player; gw: number; exc
           const off = excluded.has(fixtureKey(p.id, f.fixture));
           const opp = d.teams.get(f.opp)?.short ?? "?";
           return (
-            <span key={f.fixture} className={`cell ${off ? "off" : ""}`} style={{ background: heat(f.xp, 8), color: heatInk(f.xp, 8) }}
+            <span key={f.fixture} className={`cell ${off ? "off" : ""}`} style={{ background: heat(f.xp, 8) }}
               title={`${opp} (${f.home ? "home" : "away"}) — xP ${f.xp.toFixed(2)}, P(10+) ${(100 * f.p10).toFixed(0)}%${off ? " — switched off" : ""}. Click to toggle.`}
               onClick={() => toggle(p.id, f.fixture)}>
               <b className="num">{f.xp.toFixed(1)}</b>

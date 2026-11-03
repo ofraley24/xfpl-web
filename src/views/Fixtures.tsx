@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { fmt, pct, useApp, useStored } from "../data";
-import { RangePicker } from "../ui";
+import { RangePicker, tint } from "../ui";
 
 type Mode = "attack" | "defence" | "overall";
 
@@ -28,15 +28,7 @@ export default function Fixtures() {
 
   const colour = (v: number) => {
     const [lo, hi] = mode === "attack" ? [0.7, 2.4] : mode === "defence" ? [0.1, 0.55] : [-1.5, 1.5];
-    const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
-    return t >= 0.5
-      ? `color-mix(in srgb, var(--good) ${Math.round((t - 0.5) * 150)}%, var(--mid))`
-      : `color-mix(in srgb, var(--bad) ${Math.round((0.5 - t) * 140)}%, var(--mid))`;
-  };
-  const ink = (v: number) => {
-    const [lo, hi] = mode === "attack" ? [0.7, 2.4] : mode === "defence" ? [0.1, 0.55] : [-1.5, 1.5];
-    const t = (v - lo) / (hi - lo);
-    return t > 0.85 || t < 0.12 ? "#ffffff" : "var(--text)";
+    return tint((v - lo) / (hi - lo));
   };
   const show = (v: number) => (mode === "defence" ? pct(v) : fmt(v, 2));
 
@@ -84,7 +76,7 @@ export default function Fixtures() {
                           {here.map((x, j) => {
                             const opp = d.teams.get(x.opp)?.short ?? "?";
                             return (
-                              <span key={j} className="cell" style={{ background: colour(metric(x)), color: ink(metric(x)), cursor: "default" }}
+                              <span key={j} className="cell" style={{ background: colour(metric(x)), cursor: "default" }}
                                 title={`${opp} ${x.home ? "(H)" : "(A)"}: xG ${x.xgf.toFixed(2)} – ${x.xga.toFixed(2)}, clean sheet ${(100 * Math.exp(-x.xga)).toFixed(0)}%`}>
                                 <b>{x.home ? opp : opp.toLowerCase()}</b>
                                 <span className="o num">{show(metric(x))}</span>

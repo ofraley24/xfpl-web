@@ -1,4 +1,4 @@
-# xFPL Planner
+# Quantitative FPL
 
 A transfer-planning site for Fantasy Premier League, built on the xP model in the research repository
 ([xFPL](https://github.com/ofraley24/xFPL)). It reads one file, `public/data/forecast.json`, written before each
@@ -32,19 +32,19 @@ are data, not code: `public/data/*.json` is gitignored.
 
 ## What's in it
 
-Editorial design (serif display, paper-and-ink palette with light and dark modes, validated chart colours), a sidebar
+Single-hue green table shading, no club colours. Editorial design (serif display, paper-and-ink palette with light and dark modes, validated chart colours), a sidebar
 grouped by task, bookmarkable pages (`#/planner`, `#/paper`, ...). xP everywhere means expected points **if the player
 starts**; it is labelled quietly in the metric names and explained in the paper.
 
 | page | what it does |
 | --- | --- |
 | Overview | the gameweek at a glance: top picks per position, 'Same xP, different stories' (two same-position players with equal xP and different distributions), how it's built, value, teams to target |
-| Player analysis | xP over any gameweek range, xP per £m, haul chance; fixture cells you can switch off; filters incl. ownership and probable starters |
-| Scoring events | chance of each scoring event per player and fixture, each from its own component model: goal, 2+ goals, assist, clean sheet, defensive contribution, any bonus, 3 bonus, save points, yellow card; leaders per event; double gameweeks as 'at least once'. Follows the xP toggle (full model mixes start / substitute / no appearance) |
-| Risk & upside | built on the full points distributions: strategy modes (protect a lead / expected points / chase a target), upside against xP with the typical upside for each xP (leave-one-out local regression; no comparison where too few similar players), bad-week (20th pct) and good-week (90th pct) outcomes, blank risk, upside swaps, chase captains. Multi-gameweek totals assume independent fixtures |
+| Projections | xP over any gameweek range, xP per £m, haul chance; fixture cells you can switch off; filters incl. ownership and probable starters |
+| Player Props | chance of each scoring event per player and fixture, each from its own component model: goal, 2+ goals, assist, clean sheet, defensive contribution, any bonus, 3 bonus, save points, yellow card; leaders per event; double gameweeks as 'at least once'. Follows the xP toggle (full model mixes start / substitute / no appearance) |
+| Transfer Strategies | every pick scored against a field (top 10k / top 100k elite EO, or all managers' ownership): expected gain on the field xP × (1 − EO), volatility relative to the typical for the player's position and xP (leave-one-out local regression), classes Template (50%+ EO) / Steady differential / Punt, rank swing abs(1 − EO) × SD; differential map; strategy views (best gain / protect a lead / steady differentials / chase upside); upside swaps; captains with gain on the field xP × (2 − EO); the full elite ownership table (top-10k census, top-100k sample, 95% margins). Multi-gameweek totals assume independent fixtures and hold EO fixed |
 | Fixtures | fixture ticker: expected goals for, clean-sheet chance or expected goal difference |
 | My squad | best XI and captain each gameweek, chip planner, the team's points distribution for the gameweek (best XI + captain; team-mates treated as independent), transfer finder by squad effect over a chosen window (next GW / 3 / 5 / 8 GWs) |
-| Dream team | the optimal 15 under FPL's rules, solved as an integer program in the browser |
+| Squad Optimiser | the optimal 15 under FPL's rules, solved as an integer program in the browser; variance setting (Low / Neutral / High) adds λ × each player's variance above the typical for his position and xP |
 | Stats | season / last-4 player and team stats, explorer, shot maps and percentiles |
 | Haul map, Compare | price vs xP scatter (position by shape and colour); side-by-side players |
 | The paper | condensed version of the Results Report: method, testing, results with live figures (`evidence.json`), horizon backtest, benchmark caveat, limitations; coefficients and hyperparameters withheld |
@@ -65,5 +65,5 @@ appearance (`probs_sub`). Types: `src/types.ts`.
 
 - Sums over gameweeks have no intervals: the backtest showed normal-approximation intervals for short ranges are not
   calibrated (`xFPL/docs/HORIZON_RESULTS.md`). The squad's team-total distribution treats team-mates as independent and is not backtested.
-- The dream team keeps one XI for the whole range (no weekly re-picks, no captain) — the squad tab re-picks weekly.
+- The Squad Optimiser keeps one XI for the whole range (no weekly re-picks, no captain) — the squad tab re-picks weekly.
 - Probable XI is a heuristic used for bonus competition in the simulation, not a starting probability.
