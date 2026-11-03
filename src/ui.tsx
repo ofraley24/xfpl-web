@@ -3,8 +3,11 @@ import { useMemo, useState } from "react";
 import { fmt, useApp } from "./data";
 import type { Player, Pos } from "./types";
 
-/** Table shading: one green, from clear (t = 0) to strongest (t = 1); capped so the text ink always reads. */
-export const tint = (t: number) => `color-mix(in srgb, var(--heat) ${Math.round(Math.max(0, Math.min(1, t)) * 55)}%, transparent)`;
+/** Table shading: one green, from clear (t = 0) to full strength (t = 1), with the ink switched where the fill is strong. */
+export function tint(t: number): React.CSSProperties {
+  const c = Math.max(0, Math.min(1, t));
+  return { background: `color-mix(in srgb, var(--heat) ${Math.round(c * 100)}%, transparent)`, color: c > 0.6 ? "var(--heat-ink)" : undefined };
+}
 /** Shading for an xP value on a lo..hi scale. */
 export const heat = (x: number, hi: number, lo = 2) => tint((x - lo) / (hi - lo));
 

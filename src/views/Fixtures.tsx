@@ -76,7 +76,7 @@ export default function Fixtures() {
                           {here.map((x, j) => {
                             const opp = d.teams.get(x.opp)?.short ?? "?";
                             return (
-                              <span key={j} className="cell" style={{ background: colour(metric(x)), cursor: "default" }}
+                              <span key={j} className="cell" style={{ ...colour(metric(x)), cursor: "default" }}
                                 title={`${opp} ${x.home ? "(H)" : "(A)"}: xG ${x.xgf.toFixed(2)} – ${x.xga.toFixed(2)}, clean sheet ${(100 * Math.exp(-x.xga)).toFixed(0)}%`}>
                                 <b>{x.home ? opp : opp.toLowerCase()}</b>
                                 <span className="o num">{show(metric(x))}</span>

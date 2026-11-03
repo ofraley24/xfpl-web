@@ -112,8 +112,8 @@ function PlayersTable({ doc, w, open }: { doc: StatsDoc; w: Window; open: (id: n
                 {cols.map((k) => {
                   const x = statValue(p, w, k, per90);
                   const s = STAT.get(k)!;
-                  const bg = x === null || ["mins", "apps", "starts", "price", "own"].includes(k) ? undefined : shade(percentile(dist[k], x, s.low));
-                  return <td key={k} className="r num" style={{ background: bg }}>{fmtStat(k, x, per90)}</td>;
+                  const st = x === null || ["mins", "apps", "starts", "price", "own"].includes(k) ? undefined : shade(percentile(dist[k], x, s.low));
+                  return <td key={k} className="r num" style={st}>{fmtStat(k, x, per90)}</td>;
                 })}
               </tr>
             ))}
@@ -172,9 +172,9 @@ function TeamsTable({ doc, w }: { doc: StatsDoc; w: Window }) {
                 {TEAM_STATS.map((s) => {
                   const x = val(t, s.key);
                   const dp = perGame && s.perGame ? 2 : s.dp;
-                  return <td key={s.key} className="r num" style={{ background: x === null || s.key === "mp" ? undefined : shade(percentile(dist[s.key], x, s.low)) }}>{x === null ? "–" : x.toFixed(dp)}</td>;
+                  return <td key={s.key} className="r num" style={x === null || s.key === "mp" ? undefined : shade(percentile(dist[s.key], x, s.low))}>{x === null ? "–" : x.toFixed(dp)}</td>;
                 })}
-                {(["att", "def"] as const).map((k) => { const x = val(t, k); return <td key={k} className="r num" style={{ background: x === null ? undefined : shade(percentile(dist[k], x)) }}>{x?.toFixed(2) ?? "–"}</td>; })}
+                {(["att", "def"] as const).map((k) => { const x = val(t, k); return <td key={k} className="r num" style={x === null ? undefined : shade(percentile(dist[k], x))}>{x?.toFixed(2) ?? "–"}</td>; })}
                 <td><Spark vals={t.ratings.map((r) => r.att)} color="var(--pink)" /><Spark vals={t.ratings.map((r) => r.def)} color="var(--cyan)" /></td>
               </tr>
             ))}

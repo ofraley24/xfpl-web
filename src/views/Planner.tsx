@@ -146,7 +146,7 @@ export function GwCell({ p, gw, excluded, toggle }: { p: Player; gw: number; exc
           const off = excluded.has(fixtureKey(p.id, f.fixture));
           const opp = d.teams.get(f.opp)?.short ?? "?";
           return (
-            <span key={f.fixture} className={`cell ${off ? "off" : ""}`} style={{ background: heat(f.xp, 8) }}
+            <span key={f.fixture} className={`cell ${off ? "off" : ""}`} style={heat(f.xp, 7)}
               title={`${opp} (${f.home ? "home" : "away"}) — xP ${f.xp.toFixed(2)}, P(10+) ${(100 * f.p10).toFixed(0)}%${off ? " — switched off" : ""}. Click to toggle.`}
               onClick={() => toggle(p.id, f.fixture)}>
               <b className="num">{f.xp.toFixed(1)}</b>

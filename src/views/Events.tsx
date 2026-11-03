@@ -113,7 +113,7 @@ export default function Events() {
                 <td className="muted">{opps(d, r.fx)}</td>
                 {mode === "full" && <td className="r num muted">{pct(r.fx[0].p_start ?? 1)}</td>}
                 {COLS.map((c) => applies(c, p)
-                  ? <td key={c.k} className="r num" style={{ background: shade(r.probs[c.k], c.k) }}>{pct(r.probs[c.k])}</td>
+                  ? <td key={c.k} className="r num" style={shade(r.probs[c.k], c.k)}>{pct(r.probs[c.k])}</td>
                   : <td key={c.k} className="r faint">–</td>)}
               </tr>
             ))}

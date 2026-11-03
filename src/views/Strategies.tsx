@@ -1,55 +1,18 @@
 import { Tooltip } from "../Tooltip";
 import { useMemo, useState } from "react";
-import { fixtureKey, fmt, pct, POSITIONS, useApp, useStored, XP_TITLE } from "../data";
+import { fmt, pct, POSITIONS, useApp, useStored, XP_TITLE } from "../data";
 import { useJson } from "../evidence";
-import { atLeast, mean, quantile, sumAll } from "../prob";
-import type { Player, Pmf, Pos } from "../types";
+import { AIM_BUTTON, ClsChip, FIELD_BUTTON, FIELD_LABEL, forAim, scorePool, signed, TEMPLATE_EO, vsTypical, type Aim, type Cls, type Field, type Row } from "../strategy";
+import type { Pos } from "../types";
 import { placeLabels, PlayerName, PlayerSearch, PmfBars, POS_SHAPE, PosChip, PosMarker, StatusChip, TeamShort } from "../ui";
-import { EliteTable, type Elite, type Tier } from "./EliteTable";
-
-type Field = Tier | "all";
-type Mode = "all" | "protect" | "steady" | "chase";
-type Cls = "template" | "steady" | "punt";
-
-interface Row {
-  p: Player; pm: Pmf; n: number; xp: number; sd: number; floor: number; ceil: number; haul: number; target: number;
-  eo: number;           // the field's effective ownership (a multiplier; can exceed 1)
-  gain: number;         // xP x (1 - EO): expected points gained on the field by starting him
-  cover: number;        // xP x EO: expected points the field scores on him, i.e. what not owning him costs
-  swing: number;        // |1 - EO| x SD: typical size of his effect on your points minus the field's
-  idx: number | null;   // SD / typical SD for his xP among same-position players (1 = typical)
-  cls: Cls | null;
-}
-
-const TEMPLATE_EO = 0.5;
-const FIELD_LABEL: Record<Field, string> = { top10k: "top 10k", top100k: "top 100k", all: "all managers" };
-const CLS_LABEL: Record<Cls, string> = { template: "Template", steady: "Steady differential", punt: "Punt" };
-const CLS_STYLE: Record<Cls, React.CSSProperties> = {
-  template: { background: "var(--panel-2)", color: "var(--muted)" },
-  steady: { background: "color-mix(in srgb, var(--heat) 22%, transparent)", color: "var(--text)" },
-  punt: { background: "color-mix(in srgb, var(--heat) 55%, transparent)", color: "var(--text)" },
-};
-const ClsChip = ({ c }: { c: Cls | null }) => (c ? <span className="chip" style={CLS_STYLE[c]}>{CLS_LABEL[c]}</span> : <span className="faint">–</span>);
-const signed = (x: number, dp = 2) => `${x >= 0 ? "+" : "−"}${fmt(Math.abs(x), dp)}`;
-const vsTypical = (idx: number) => `${idx >= 1 ? "+" : "−"}${Math.abs(100 * (idx - 1)).toFixed(0)}%`;
-
-/** A player's points distribution over gameweeks [from, to] (fixtures summed; independent across fixtures). */
-function rangePmf(p: Player, from: number, to: number, excluded: Set<string>): { pm: Pmf; n: number } | null {
-  const fx = p.fixtures.filter((f) => f.gw >= from && f.gw <= to && !excluded.has(fixtureKey(p.id, f.fixture)) && f.pmf);
-  if (!fx.length) return null;
-  return { pm: sumAll(fx.map((f) => f.pmf!)), n: fx.length };
-}
-const sdOf = (d: Pmf) => {
-  const m = mean(d);
-  return Math.sqrt(d.p.reduce((s, q, i) => s + q * (d.lo + i - m) ** 2, 0));
-};
+import { EliteTable, type Elite } from "./EliteTable";
 
 export default function Strategies() {
   const { d, excluded, mode: xpMode } = useApp();
   const { v: el, err } = useJson<Elite>("./data/elite_ownership.json");
   const first = d.gws[0];
   const [span, setSpan] = useStored<number>("rk:span", 1);
-  const [mode, setMode] = useStored<Mode>("ts:mode", "all");
+  const [mode, setMode] = useStored<Aim>("ts:mode", "all");
   const [fieldRaw, setField] = useStored<Field>("ts:field", "top10k");
   const [pos, setPos] = useStored<Pos | "ALL">("rk:pos", "ALL");
   const [maxPrice, setMaxPrice] = useStored<number>("rk:maxprice", 16);
@@ -59,40 +22,11 @@ export default function Strategies() {
   const target = Math.max(2, Math.min(targetRaw, 15 * span));
   const field: Field = el ? fieldRaw : "all";
 
-  // every probable, fit starter, scored against the field; spread is normalised before the price and position filters
-  const pool = useMemo(() => {
-    const eoOf = new Map<number, number>();
-    if (el && field !== "all") for (const e of el.players) eoOf.set(e.id, e[`${field}_eo`]);
-    const out: Row[] = [];
-    for (const p of d.players) {
-      if (!p.fixtures.some((f) => f.gw >= first && f.gw <= to && f.xi)) continue;   // probable starters
-      if (p.status !== "a" && !(p.status === "d" && (p.chance_next ?? 0) >= 75)) continue;
-      const r = rangePmf(p, first, to, excluded);
-      if (!r) continue;
-      const xp = mean(r.pm), sd = sdOf(r.pm);
-      const eo = field === "all" ? p.own / 100 : eoOf.get(p.id) ?? 0;   // absent from the elite file: nobody there owns him
-      out.push({ p, pm: r.pm, n: r.n, xp, sd, floor: quantile(r.pm, 0.2), ceil: quantile(r.pm, 0.9), haul: atLeast(r.pm, haulLine),
-        target: atLeast(r.pm, target), eo, gain: xp * (1 - eo), cover: xp * eo, swing: Math.abs(1 - eo) * sd, idx: null, cls: null });
-    }
-    for (const ps of POSITIONS) {
-      const rs = out.filter((r) => r.p.pos === ps);
-      const typ = trend(rs, (r) => r.xp, (r) => r.sd);
-      for (const r of rs) {
-        const t = typ.get(r.p.id);
-        r.idx = t != null && t > 0 ? r.sd / t : null;
-        r.cls = r.eo >= TEMPLATE_EO ? "template" : r.idx == null ? null : r.idx > 1 ? "punt" : "steady";
-      }
-    }
-    return out;
-  }, [d, el, field, first, to, excluded, haulLine, target]);
+  const pool = useMemo(() => scorePool({ players: d.players, el, field, from: first, to, excluded, haulLine, target }),
+    [d, el, field, first, to, excluded, haulLine, target]);
 
   const rows = useMemo(() => pool.filter((r) => (pos === "ALL" || r.p.pos === pos) && r.p.price <= maxPrice + 1e-9), [pool, pos, maxPrice]);
-  const shown = useMemo(() => {
-    const keep = mode === "protect" ? (r: Row) => r.cls === "template" : mode === "steady" ? (r: Row) => r.cls === "steady"
-      : mode === "chase" ? (r: Row) => r.cls === "punt" : () => true;
-    const key = mode === "protect" ? (r: Row) => r.cover : mode === "chase" ? (r: Row) => r.target * (1 - r.eo) : (r: Row) => r.gain;
-    return rows.filter(keep).sort((a, b) => key(b) - key(a));
-  }, [rows, mode]);
+  const shown = useMemo(() => forAim(rows, mode), [rows, mode]);
 
   const fieldName = FIELD_LABEL[field];
   const stale = el && el.gw < d.fc.deadline_gw;
@@ -107,8 +41,7 @@ export default function Strategies() {
         <div className="row">
           <div className="seg" title="Who you are competing with">
             {(["top10k", "top100k", "all"] as const).map((k) => (
-              <button key={k} className={field === k ? "on" : ""} disabled={k !== "all" && !el} onClick={() => setField(k)}>
-                {k === "top10k" ? "Top 10k" : k === "top100k" ? "Top 100k" : "All managers"}</button>))}
+              <button key={k} className={field === k ? "on" : ""} disabled={k !== "all" && !el} onClick={() => setField(k)}>{FIELD_BUTTON[k]}</button>))}
           </div>
           <div className="seg" title="Window">
             {[1, 2, 3, 4, 6].filter((n) => first + n - 1 <= d.gws[d.gws.length - 1]).map((n) =>
@@ -131,8 +64,8 @@ export default function Strategies() {
       <div className="panel">
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div className="seg" title="Strategy">
-            {([["all", "Best gain"], ["protect", "Protect a lead"], ["steady", "Steady differentials"], ["chase", "Chase upside"]] as const).map(([k, l]) =>
-              <button key={k} className={mode === k ? "on" : ""} onClick={() => setMode(k)}>{l}</button>)}
+            {(["all", "protect", "steady", "chase"] as const).map((k) =>
+              <button key={k} className={mode === k ? "on" : ""} onClick={() => setMode(k)}>{AIM_BUTTON[k]}</button>)}
           </div>
           <span className="muted">{shown.length} players</span>
         </div>
@@ -205,28 +138,6 @@ export default function Strategies() {
         : <div className="panel muted">{err ? `No elite ownership file yet (${err}).` : "Loading elite ownership…"}</div>}
     </div>
   );
-}
-
-/** Typical value of f at each x: leave-one-out local linear regression (Gaussian kernel, bandwidth h), keyed by player id.
- *  Undefined (null) where fewer than 5 other rows lie within 2h, so sparse extremes get no comparison. */
-function trend<T extends { p: Player }>(rows: T[], x: (r: T) => number, f: (r: T) => number, h = 0.35) {
-  const xs = rows.map(x), ys = rows.map(f);
-  const at = (x0: number, skip: number) => {
-    let sw = 0, swx = 0, swy = 0, swxx = 0, swxy = 0, near = 0;
-    for (let i = 0; i < xs.length; i++) {
-      if (i === skip) continue;
-      const dx = xs[i] - x0;
-      if (Math.abs(dx) <= 2 * h) near++;
-      const w = Math.exp(-0.5 * (dx / h) ** 2);
-      sw += w; swx += w * dx; swy += w * ys[i]; swxx += w * dx * dx; swxy += w * dx * ys[i];
-    }
-    if (near < 5 || sw <= 0) return null;
-    const det = sw * swxx - swx * swx;
-    return det > 1e-12 ? (swxx * swy - swx * swxy) / det : swy / sw;   // intercept at x0
-  };
-  const typ = new Map<number, number | null>();
-  rows.forEach((r, i) => typ.set(r.p.id, at(xs[i], i)));
-  return typ;
 }
 
 /** Differential map: expected gain on the field against spread relative to position and xP. */

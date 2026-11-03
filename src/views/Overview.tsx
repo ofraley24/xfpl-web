@@ -1,117 +1,130 @@
 import { useMemo } from "react";
 import { go } from "../App";
-import { fixtureKey, fmt, POSITIONS, rangeXp, useApp, XP_LABEL } from "../data";
+import { fmt, pct, useApp, useStored, XP_LABEL } from "../data";
+import { useJson } from "../evidence";
 import { atLeast } from "../prob";
+import { AIM_BUTTON, ClsChip, FIELD_BUTTON, FIELD_LABEL, forAim, scorePool, signed, TEMPLATE_EO, type Aim, type Field, type Row } from "../strategy";
 import type { Player, Pmf } from "../types";
 import { PlayerName, PmfBars, PosChip, StatusChip, TeamShort } from "../ui";
+import type { Elite } from "./EliteTable";
 
-const PILLARS = [
-  { title: "Team strength that moves", anchor: "team-strength",
-    body: "Every club carries an attack and a defence rating, updated after each match from the chances it created and allowed, not just the scoreline. Home advantage and league scoring levels are learned as the seasons change." },
-  { title: "Talent, separated from the team", anchor: "player-talent",
-    body: "Each player is measured by their share of their team's attack — shots, shot quality, chances created — across six leagues, with lucky streaks filtered out statistically before they reach a forecast." },
-  { title: "Built from the bottom up", anchor: "scoring-events",
-    body: "Goals, assists, clean sheets, saves, cards, defensive work and bonus are each modelled on their own, then combined in a thousand simulated matches, where team-mates share clean sheets and compete for bonus as they do on the pitch." },
-];
+const DIFF_EO = 0.1;   // a differential: owned (effectively) by under 10% of the field
 
 export default function Overview() {
-  const { d, excluded, mode } = useApp();
+  const { d, excluded, mode, squad } = useApp();
+  const { v: el } = useJson<Elite>("./data/elite_ownership.json");
   const gw = d.fc.deadline_gw;
-  const to = Math.min(d.gws[d.gws.length - 1], gw + 5);
-  const starters = useMemo(() => d.players.filter((p) => p.fixtures.some((f) => f.gw === gw && f.xi) && (p.status === "a" || (p.chance_next ?? 0) >= 75)), [d, gw]);
-  const gwXp = (p: Player) => p.fixtures.filter((f) => f.gw === gw && !excluded.has(fixtureKey(p.id, f.fixture))).reduce((s, f) => s + f.xp, 0);
-  const byPos = POSITIONS.map((pos) => ({ pos, top: starters.filter((p) => p.pos === pos).sort((a, b) => gwXp(b) - gwXp(a)).slice(0, 10) }));
-  const value = [...starters].map((p) => ({ p, v: rangeXp(p, gw, to, excluded) / p.price })).sort((a, b) => b.v - a.v).slice(0, 10);
-  const teams = useMemo(() => {
-    const t = new Map<number, { xg: number; cs: number; n: number }>();
-    for (const f of d.fc.fixtures) {
-      if (f.gw < gw || f.gw > to) continue;
-      for (const [id, xg, xga] of [[f.home, f.xg_home, f.xg_away], [f.away, f.xg_away, f.xg_home]] as const) {
-        const o = t.get(id) ?? { xg: 0, cs: 0, n: 0 };
-        o.xg += xg; o.cs += Math.exp(-xga); o.n += 1;
-        t.set(id, o);
-      }
-    }
-    return [...t.entries()].map(([id, o]) => ({ id, ...o }));
-  }, [d, gw, to]);
+  // the same stored choices as Transfer Strategies, so the situation set here carries over
+  const [fieldRaw, setField] = useStored<Field>("ts:field", "top10k");
+  const [aim, setAim] = useStored<Aim>("ts:mode", "all");
+  const field: Field = el ? fieldRaw : "all";
+  const fieldName = FIELD_LABEL[field];
+  const pool = useMemo(() => scorePool({ players: d.players, el: el ?? null, field, from: gw, to: gw, excluded, haulLine: 10, target: 10 }),
+    [d, el, field, gw, excluded]);
+  const owned = useMemo(() => new Set(squad), [squad]);
+  const top = useMemo(() => [...pool].sort((a, b) => b.xp - a.xp).slice(0, 10), [pool]);
+  const picks = useMemo(() => (aim === "protect" ? forAim(pool, "protect")
+    : forAim(pool.filter((r) => r.eo < DIFF_EO && !owned.has(r.p.id)), aim)).slice(0, 10), [pool, aim, owned]);
+  const captains = useMemo(() => {
+    const best = (k: (r: Row) => number) => pool.reduce<Row | null>((m, r) => (!m || k(r) > k(m) ? r : m), null);
+    return [
+      { label: "Safest", note: "highest xP", r: best((r) => r.xp) },
+      { label: "Best gain", note: `on the ${fieldName}: xP × (2 − EO)`, r: best((r) => r.xp * (2 - r.eo)) },
+      { label: "Upside bet", note: "likeliest 20+ as captain", r: best((r) => r.haul) },
+    ];
+  }, [pool, fieldName]);
   const opp = (p: Player) => p.fixtures.filter((f) => f.gw === gw).map((f) => (f.home ? d.teams.get(f.opp)?.short : d.teams.get(f.opp)?.short.toLowerCase())).join(", ");
   const deadline = new Date(d.fc.deadline_utc);
+  const stale = el && el.gw < gw;
+  const Owned = ({ p }: { p: Player }) => (owned.has(p.id) ? <span className="chip" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>owned</span> : null);
+  const Who = ({ r }: { r: Row }) => (
+    <td><div className="row" style={{ gap: 6 }}><PosChip pos={r.p.pos} /><PlayerName p={r.p} /><StatusChip p={r.p} /><Owned p={r.p} /></div>
+      <div className="faint" style={{ fontSize: 11.5, whiteSpace: "nowrap" }}><TeamShort id={r.p.team} /> · {opp(r.p)} · £{fmt(r.p.price)}m</div></td>
+  );
+  const Mini = ({ r }: { r: Row }) => <td style={{ paddingTop: 2, paddingBottom: 0 }}><PmfBars pmf={r.pm} width={96} height={20} maxPts={20} /></td>;
+  const pickTitle = aim === "protect" ? "Template to cover" : aim === "steady" ? "10 steady differentials" : aim === "chase" ? "10 punts" : "10 differentials";
+  const pickNote = aim === "protect" ? `${Math.round(100 * TEMPLATE_EO)}%+ EO in the ${fieldName}, by the expected points you lose to them without him`
+    : `under ${Math.round(100 * DIFF_EO)}% EO in the ${fieldName}${squad.length ? ", not in your squad" : ""}, ${aim === "chase" ? "by P(10+) × (1 − EO)" : "by expected gain on the field"}`;
 
   return (
     <div className="grid" style={{ gap: 28 }}>
       <header>
         <div className="kicker">Gameweek {gw} · deadline {deadline.toLocaleString(undefined, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</div>
-        <h1>Expected points, measured honestly.</h1>
-        <p className="lede">Quantitative FPL is a points model built from the ground up: dynamic team-strength ratings, player talent
-          separated from team quality, and every goal, assist, clean sheet and bonus point played out a thousand times per
-          fixture, on more than a decade of shot-level data.</p>
+        <h1>Forecasting points distributions to personalise your strategy.</h1>
+        <p className="lede">Every player's full range of outcomes, not just the average, scored against the managers you are competing with.
+          Tell us your situation and the picks follow. <a href="#/paper" onClick={() => go("paper")}>How the model works</a>.</p>
       </header>
 
-      <section>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-          <h2>Gameweek {gw}: the model's picks</h2>
-          <span className="metric-note">xP · {XP_LABEL[mode]} · probable starters, fit or ≥75%</span>
+      <section className="panel">
+        <h3 style={{ margin: "0 0 8px" }}>Your situation</h3>
+        <div className="row" style={{ gap: 18 }}>
+          <div className="row" style={{ gap: 8 }}><span className="muted">Competing with</span>
+            <div className="seg">{(["top10k", "top100k", "all"] as const).map((k) => (
+              <button key={k} className={field === k ? "on" : ""} disabled={k !== "all" && !el} onClick={() => setField(k)}>{FIELD_BUTTON[k]}</button>))}</div>
+          </div>
+          <div className="row" style={{ gap: 8 }}><span className="muted">Aim</span>
+            <div className="seg">{(["all", "protect", "steady", "chase"] as const).map((k) => (
+              <button key={k} className={aim === k ? "on" : ""} onClick={() => setAim(k)}>{AIM_BUTTON[k]}</button>))}</div>
+          </div>
         </div>
-        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", marginTop: 10 }}>
-          {byPos.map(({ pos, top }) => (
-            <div key={pos} className="panel">
-              <div className="row" style={{ justifyContent: "space-between", marginBottom: 6 }}><PosChip pos={pos} /><span className="metric-note">xP</span></div>
-              <table className="plain"><tbody>
-                {top.map((p, i) => (
-                  <tr key={p.id}>
-                    <td className="faint num" style={{ width: 18, paddingRight: 0 }}>{i + 1}</td>
-                    <td><PlayerName p={p} /> <StatusChip p={p} /><div className="faint" style={{ fontSize: 11.5 }}><TeamShort id={p.team} /> · {opp(p)}</div></td>
-                    <td className="r serif" style={{ fontSize: 18, fontWeight: 600 }}>{fmt(gwXp(p))}</td>
-                  </tr>
-                ))}
-              </tbody></table>
-            </div>
-          ))}
-        </div>
+        <p className="faint" style={{ margin: "8px 0 0", fontSize: 12 }}>
+          {field === "all" ? <>Against all managers, EO is FPL's overall ownership.</>
+            : <>EO is from gameweek {el!.gw} {fieldName} teams{stale ? ", entered at the last deadline (FPL hides picks until the deadline)" : ""}.</>}{" "}
+          {squad.length ? <>Players in your squad are marked owned.</> : <>Load your team in <a href="#/squad" onClick={() => go("squad")}>My squad</a> to mark the players you own and leave them out of the differentials.</>}
+        </p>
       </section>
-
-      <SameXp starters={starters} gw={gw} />
-
-      <section aria-label="How it's built">
-        <div className="three" style={{ gap: 22 }}>
-          {PILLARS.map((p, i) => (
-            <div key={p.title} className="pillar">
-              <div className="pillar-no">{String(i + 1).padStart(2, "0")}</div>
-              <h3>{p.title}</h3>
-              <p>{p.body}</p>
-              <a href={`#/paper/${p.anchor}`} className="pillar-link">How it works →</a>
-            </div>
-          ))}
-        </div>
-      </section>
-
 
       <section className="two">
         <div className="panel">
-          <h3>Best value, GW{gw}–{to}</h3>
-          <table className="plain"><tbody>
-            {value.map(({ p, v }, i) => (
-              <tr key={p.id}><td className="faint num" style={{ width: 18, paddingRight: 0 }}>{i + 1}</td><td><PosChip pos={p.pos} /> <PlayerName p={p} /><div className="faint" style={{ fontSize: 11.5 }}><TeamShort id={p.team} /> · £{fmt(p.price)}m</div></td>
-                <td className="r"><b>{fmt(v, 2)}</b><div className="metric-note">xP per £m</div></td></tr>
-            ))}
-          </tbody></table>
-          <button className="btn small" style={{ marginTop: 8 }} onClick={() => go("planner")}>Open player analysis →</button>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
+            <h3 style={{ margin: 0 }}>Top 10, gameweek {gw}</h3><span className="metric-note">xP · {XP_LABEL[mode]}</span>
+          </div>
+          <div style={{ overflowX: "auto" }}><table className="plain" style={{ marginTop: 6 }}>
+            <thead><tr><th></th><th>Player</th><th className="r">xP</th><th className="r">EO</th><th>Distribution</th></tr></thead>
+            <tbody>{top.map((r, i) => (
+              <tr key={r.p.id}><td className="faint num" style={{ width: 18, paddingRight: 0 }}>{i + 1}</td><Who r={r} />
+                <td className="r serif" style={{ fontSize: 18, fontWeight: 600 }}>{fmt(r.xp)}</td><td className="r num">{fmt(100 * r.eo, 0)}%</td><Mini r={r} /></tr>
+            ))}</tbody>
+          </table></div>
+          <button className="btn small" style={{ marginTop: 8 }} onClick={() => go("planner")}>All projections →</button>
         </div>
         <div className="panel">
-          <h3>Teams to target, GW{gw}–{to}</h3>
-          <table className="plain">
-            <thead><tr><th></th><th>Attack</th><th className="r">exp. goals</th><th>Defence</th><th className="r">exp. CS</th></tr></thead>
-            <tbody>
-              {Array.from({ length: 10 }, (_, i) => i).map((i) => {
-                const a = [...teams].sort((x, y) => y.xg - x.xg)[i], c = [...teams].sort((x, y) => y.cs - x.cs)[i];
-                return <tr key={i}><td className="faint num" style={{ width: 18, paddingRight: 0 }}>{i + 1}</td><td>{d.teams.get(a.id)?.short}</td><td className="r">{fmt(a.xg)}</td><td>{d.teams.get(c.id)?.short}</td><td className="r">{fmt(c.cs, 1)}</td></tr>;
-              })}
-            </tbody>
-          </table>
-          <div className="faint" style={{ fontSize: 11.5, marginTop: 6 }}>Projected goals and clean sheets over the next six gameweeks, from each team's strength against its opponents.</div>
-          <button className="btn small" style={{ marginTop: 8 }} onClick={() => go("fixtures")}>Full fixture ticker →</button>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
+            <h3 style={{ margin: 0 }}>{pickTitle}</h3><span className="metric-note">{pickNote}</span>
+          </div>
+          {picks.length ? (
+            <div style={{ overflowX: "auto" }}><table className="plain" style={{ marginTop: 6 }}>
+              <thead><tr><th>Player</th><th>Risk</th><th className="r">xP</th><th className="r">EO</th>{aim === "protect" && <th className="r" title="xP × EO: expected points the field scores on him">Cost</th>}<th className="r" title="Chance of 10+ points">P(10+)</th><th>Distribution</th></tr></thead>
+              <tbody>{picks.map((r) => (
+                <tr key={r.p.id}><Who r={r} /><td><ClsChip c={r.cls} short /></td><td className="r num"><b>{fmt(r.xp)}</b></td><td className="r num">{fmt(100 * r.eo, 0)}%</td>
+                  {aim === "protect" && <td className="r num">{fmt(r.cover, 2)}</td>}<td className="r num">{pct(r.haul)}</td><Mini r={r} /></tr>
+              ))}</tbody>
+            </table></div>
+          ) : <p className="muted">No players fit this aim this gameweek.</p>}
+          <button className="btn small" style={{ marginTop: 8 }} onClick={() => go("risk")}>Full transfer strategies →</button>
         </div>
       </section>
+
+      <section className="panel">
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
+          <h3 style={{ margin: 0 }}>Captain shortlist</h3><span className="metric-note">gameweek {gw} · against the {fieldName}</span>
+        </div>
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", marginTop: 10 }}>
+          {captains.map(({ label, note, r }) => r && (
+            <div key={label} style={{ borderTop: "1px solid var(--line)", paddingTop: 8 }}>
+              <div className="kicker" style={{ marginBottom: 2 }}>{label}</div>
+              <div className="row" style={{ gap: 6 }}><PosChip pos={r.p.pos} /><PlayerName p={r.p} /><Owned p={r.p} /></div>
+              <div className="faint" style={{ fontSize: 11.5, margin: "2px 0 4px" }}>{note}</div>
+              <div className="row" style={{ gap: 12, fontSize: 13 }}>
+                <span>captain xP <b>{fmt(2 * r.xp)}</b></span><span>EO <b>{fmt(100 * r.eo, 0)}%</b></span>
+                <span>gain <b>{signed(r.xp * (2 - r.eo))}</b></span><span>P(20+) <b>{pct(r.haul)}</b></span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <SameXp starters={pool.map((r) => r.p)} gw={gw} />
     </div>
   );
 }
@@ -149,7 +162,7 @@ function SameXp({ starters, gw }: { starters: Player[]; gw: number }) {
   return (
     <section>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-        <h2>Same xP, different stories</h2>
+        <h3 style={{ margin: 0 }}>Same xP, different stories</h3>
         <span className="metric-note">two {({ GKP: "goalkeepers", DEF: "defenders", MID: "midfielders", FWD: "forwards" } as const)[hi.p.pos]} · gameweek {gw} · full points distributions</span>
       </div>
       <p className="sub" style={{ marginTop: 4 }}>Expected points are only the average. Every forecast here is a full distribution of
